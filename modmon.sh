@@ -353,22 +353,24 @@ Mount_WebUI(){
 }
 
 WriteData_ToJS(){
+	inputfile="$1"
+	outputfile="$2"
+	shift;shift
+	
+	for var in "$@"; do
 	{
-	echo "var $3;"
-	echo "$3 = [];"; } >> "$2"
-	contents="$3"'.unshift('
-	while IFS='' read -r line || [ -n "$line" ]; do
-		datapoint=""
-		if echo "$line" | grep -q "NaN"; then
-			datapoint="{ x: moment.unix(""$(echo "$line" | awk 'BEGIN{FS=","}{ print $1 }' | awk '{$1=$1};1')""), y: 0 }"
-		else
+		echo "var $var;"
+		echo "$var = [];"; } >> "$outputfile"
+		contents="$var"'.unshift('
+		while IFS='' read -r line || [ -n "$line" ]; do
+			if echo "$line" | grep -q "NaN"; then continue; fi
 			datapoint="{ x: moment.unix(""$(echo "$line" | awk 'BEGIN{FS=","}{ print $1 }' | awk '{$1=$1};1')""), y: ""$(echo "$line" | awk 'BEGIN{FS=","}{ print $2 }' | awk '{$1=$1};1')"" }"
-		fi
-		contents="$contents""$datapoint"","
-	done < "$1"
-	contents=$(echo "$contents" | sed 's/.$//')
-	contents="$contents"");"
-	printf "%s\\r\\n\\r\\n" "$contents" >> "$2"
+			contents="$contents""$datapoint"","
+		done < "$inputfile"
+		contents=$(echo "$contents" | sed 's/,$//')
+		contents="$contents"");"
+		printf "%s\\r\\n\\r\\n" "$contents" >> "$outputfile"
+	done
 }
 
 WriteStats_ToJS(){
@@ -406,6 +408,7 @@ Generate_Stats(){
 	export TZ
 	timestamp="$(date '+%s')"
 	metriclist="RxPwr RxMer RxSnr TxPwr PstRs T3Out T4Out"
+	rm -f "$SCRIPT_DIR/modstatsdata.js"
 	
 	for metric in $metriclist; do
 	{
