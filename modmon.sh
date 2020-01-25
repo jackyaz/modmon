@@ -330,7 +330,7 @@ Get_WebUI_Page () {
 
 Mount_WebUI(){
 	umount /www/UUAccelerator.asp 2>/dev/null
-	mount -o bind "$SCRIPT_DIR/uiskynetstats_www.asp" "/www/UUAccelerator.asp"
+	mount -o bind "$SCRIPT_DIR/modmonstats_www.asp" "/www/UUAccelerator.asp"
 	# if [ ! -f "$SCRIPT_DIR/modmonstats_www.asp" ]; then
 	# 	Download_File "$SCRIPT_REPO/modmonstats_www.asp" "$SCRIPT_DIR/modmonstats_www.asp"
 	# fi
@@ -413,7 +413,7 @@ Generate_Stats(){
 	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/T3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/T4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/PstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 	
 	if [ "$(cat /tmp/shstats.csv | wc -l)" -gt 1 ]; then
-		rm -f "$SCRIPT_DIR/modstatsdata.js"
+		echo "" > "$SCRIPT_DIR/modstatsdata.js"
 		rm -f /tmp/modmon-stats.sql
 		for metric in $metriclist; do
 		{
