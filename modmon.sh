@@ -105,7 +105,7 @@ Update_Version(){
 		Update_File "chartjs-plugin-annotation.js"
 		Update_File "hammerjs.js"
 		Update_File "moment.js"
-		#Mount_WebUI
+		Mount_WebUI
 		
 		if [ "$doupdate" != "false" ]; then
 			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated"
@@ -127,7 +127,7 @@ Update_Version(){
 			Update_File "chartjs-plugin-annotation.js"
 			Update_File "hammerjs.js"
 			Update_File "moment.js"
-			#Mount_WebUI
+			Mount_WebUI
 			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated"
 			chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
 			Clear_Lock
@@ -144,7 +144,7 @@ Update_File(){
 		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
 			Print_Output "true" "New version of $1 downloaded" "$PASS"
 			mv "$SCRIPT_DIR/$1" "$SCRIPT_DIR/$1.old"
-			#Mount_WebUI
+			Mount_WebUI
 		fi
 		rm -f "$tmpfile"
 	elif [ "$1" = "chartjs-plugin-zoom.js" ] || [ "$1" = "chartjs-plugin-annotation.js" ] || [ "$1" = "moment.js" ] || [ "$1" =  "hammerjs.js" ]; then
@@ -329,25 +329,27 @@ Get_WebUI_Page () {
 }
 
 Mount_WebUI(){
-		if [ ! -f "$SCRIPT_DIR/modmonstats_www.asp" ]; then
-			Download_File "$SCRIPT_REPO/modmonstats_www.asp" "$SCRIPT_DIR/modmonstats_www.asp"
-		fi
-		MyPage="$(Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp")"
-		if [ "$MyPage" = "none" ]; then
-			Print_Output "true" "Unable to mount $SCRIPT_NAME WebUI page, exiting" "$CRIT"
-			exit 1
-		fi
-		Print_Output "true" "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
-		cp -f "$SCRIPT_DIR/modmonstats_www.asp" "$SCRIPT_PAGE_DIR/$MyPage"
-
-		if [ ! -f "/tmp/menuTree.js" ]; then
-			cp -f "/www/require/modules/menuTree.js" "/tmp/"
-		fi
-
-		sed -i "\\~$MyPage~d" /tmp/menuTree.js
-		sed -i "/url: \"Tools_OtherSettings.asp\", tabName:/a {url: \"$MyPage\", tabName: \"Uptime Monitoring\"}," /tmp/menuTree.js
-		umount /www/require/modules/menuTree.js 2>/dev/null
-		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
+	umount /www/UUAccelerator.asp 2>/dev/null
+	mount -o bind "$SCRIPT_DIR/uiskynetstats_www.asp" "/www/UUAccelerator.asp"
+	# if [ ! -f "$SCRIPT_DIR/modmonstats_www.asp" ]; then
+	# 	Download_File "$SCRIPT_REPO/modmonstats_www.asp" "$SCRIPT_DIR/modmonstats_www.asp"
+	# fi
+	# MyPage="$(Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp")"
+	# if [ "$MyPage" = "none" ]; then
+	# 	Print_Output "true" "Unable to mount $SCRIPT_NAME WebUI page, exiting" "$CRIT"
+	# 	exit 1
+	# fi
+	# Print_Output "true" "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
+	# cp -f "$SCRIPT_DIR/modmonstats_www.asp" "$SCRIPT_PAGE_DIR/$MyPage"
+	#
+	# if [ ! -f "/tmp/menuTree.js" ]; then
+	# 	cp -f "/www/require/modules/menuTree.js" "/tmp/"
+	# fi
+	#
+	# sed -i "\\~$MyPage~d" /tmp/menuTree.js
+	# sed -i "/url: \"Tools_OtherSettings.asp\", tabName:/a {url: \"$MyPage\", tabName: \"Uptime Monitoring\"}," /tmp/menuTree.js
+	# umount /www/require/modules/menuTree.js 2>/dev/null
+	# mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 }
 
 WriteData_ToJS(){
@@ -608,7 +610,7 @@ Menu_Install(){
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Shortcut_script create
-	#Mount_WebUI
+	Mount_WebUI
 	Menu_GenerateStats
 	
 	Clear_Lock
@@ -621,7 +623,7 @@ Menu_Startup(){
 	Shortcut_script create
 	Create_Dirs
 	Create_Symlinks
-	#Mount_WebUI
+	Mount_WebUI
 	Clear_Lock
 }
 
