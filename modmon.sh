@@ -405,9 +405,11 @@ Generate_Stats(){
 	TZ=$(cat /etc/TZ)
 	export TZ
 	timestamp="$(date '+%s')"
+	metriclist="RxPwr RxMer RxSnr TxPwr PstRs T3Out T4Out"
 	
-	for metric in "RxPwr RxMer RxSnr TxPwr PstRs T3Out T4Out"; do
+	for metric in $metriclist; do
 	{
+		echo "$metric"
 		echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] INTEGER NOT NULL);" > /tmp/modmon-stats.sql
 		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 		
