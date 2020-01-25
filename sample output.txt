@@ -1,0 +1,178 @@
+docsIfSigQCorrecteds=pre-rs
+docsIfSigQUncorrectables=post-rs
+docsIfSigQSignalNoise=downstream snr
+docsIfDownChannelPower=downstream power
+docsIf3CmStatusUsTxPower=upstream tx power
+docsIf3CmStatusUsT3Timeouts=t3 timeouts
+docsIf3CmStatusUsT4Timeouts=t4 timeouts
+
+jacklocal@DockerBox:~$ curl -s 'http://192.168.100.1/getRouterStatus' --compressed | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/T3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/T4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/PstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]"
+
+PstRs,1,503
+RxSnr,1,376
+RxMer,1,376
+PstRs,2,17753500
+RxSnr,2,366
+RxMer,2,366
+PstRs,3,59298189
+RxSnr,3,373
+RxMer,3,373
+PstRs,4,1573749743
+RxSnr,4,376
+RxMer,4,376
+PstRs,5,1573736871
+RxSnr,5,373
+RxMer,5,373
+PstRs,6,1573700413
+RxSnr,6,376
+RxMer,6,376
+PstRs,7,1573654554
+RxSnr,7,373
+RxMer,7,373
+PstRs,8,1573320791
+RxSnr,8,376
+RxMer,8,376
+PstRs,9,1557038340
+RxSnr,9,386
+RxMer,9,386
+PstRs,10,1339144610
+RxSnr,10,386
+RxMer,10,386
+PstRs,11,722757200
+RxSnr,11,386
+RxMer,11,386
+PstRs,12,216480988
+RxSnr,12,389
+RxMer,12,389
+PstRs,13,27234733
+RxSnr,13,376
+RxMer,13,376
+PstRs,14,400615
+RxSnr,14,376
+RxMer,14,376
+PstRs,15,38555
+RxSnr,15,376
+RxMer,15,376
+PstRs,16,4056
+RxSnr,16,376
+RxMer,16,376
+PstRs,17,828
+RxSnr,17,376
+RxMer,17,376
+PstRs,18,1027
+RxSnr,18,386
+RxMer,18,386
+PstRs,19,724
+RxSnr,19,389
+RxMer,19,389
+PstRs,20,684
+RxSnr,20,386
+RxMer,20,386
+PstRs,21,625
+RxSnr,21,386
+RxMer,21,386
+PstRs,22,807
+RxSnr,22,376
+RxMer,22,376
+PstRs,23,2601
+RxSnr,23,386
+RxMer,23,386
+PstRs,24,670
+RxSnr,24,376
+RxMer,24,376
+RxPwr,1,40
+RxPwr,2,75
+RxPwr,3,66
+RxPwr,4,65
+RxPwr,5,65
+RxPwr,6,68
+RxPwr,7,66
+RxPwr,8,69
+RxPwr,9,65
+RxPwr,10,65
+RxPwr,11,64
+RxPwr,12,60
+RxPwr,13,56
+RxPwr,14,55
+RxPwr,15,54
+RxPwr,16,49
+RxPwr,17,44
+RxPwr,18,41
+RxPwr,19,43
+RxPwr,20,40
+RxPwr,21,37
+RxPwr,22,40
+RxPwr,23,40
+RxPwr,24,40
+TxPwr,1,25.00
+T3Out,1,0
+T4Out,1,0
+TxPwr,2,25.00
+T3Out,2,0
+T4Out,2,0
+TxPwr,3,25.00
+T3Out,3,0
+T4Out,3,0
+TxPwr,4,25.00
+T3Out,4,0
+T4Out,4,0
+DevEvFirstTimeOid,1,23/01/2020 09:51:38
+DevEvId,1,5
+DevEvText,1,RCS Partial Service;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,2,23/01/2020 09:52:12
+DevEvId,2,5
+DevEvText,2,Lost MDD Timeout;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,3,23/01/2020 09:52:13
+DevEvId,3,5
+DevEvText,3,RCS Partial Service;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,4,23/01/2020 09:52:40
+DevEvId,4,5
+DevEvText,4,Lost MDD Timeout;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,5,23/01/2020 09:52:40
+DevEvId,5,5
+DevEvText,5,RCS Partial Service;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,6,23/01/2020 09:52:48
+DevEvId,6,5
+DevEvText,6,Lost MDD Timeout;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,7,23/01/2020 09:52:49
+DevEvId,7,5
+DevEvText,7,RCS Partial Service;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,8,23/01/2020 09:53:5
+DevEvId,8,5
+DevEvText,8,Lost MDD Timeout;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,9,23/01/2020 09:53:6
+DevEvId,9,5
+DevEvText,9,RCS Partial Service;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,10,23/01/2020 09:53:32
+DevEvId,10,5
+DevEvText,10,Lost MDD Timeout;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,11,23/01/2020 09:53:32
+DevEvId,11,5
+DevEvText,11,RCS Partial Service;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,12,23/01/2020 09:54:2
+DevEvId,12,5
+DevEvText,12,Lost MDD Timeout;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,13,23/01/2020 09:54:3
+DevEvId,13,5
+DevEvText,13,RCS Partial Service;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,14,23/01/2020 09:54:6
+DevEvId,14,5
+DevEvText,14,Lost MDD Timeout;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,15,24/01/2020 06:31:25
+DevEvId,15,4
+DevEvText,15,DHCP RENEW sent - No response for IPv4;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,16,24/01/2020 21:48:31
+DevEvId,16,3
+DevEvText,16,No Ranging Response received - T3 time-out;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,17,24/01/2020 22:40:21
+DevEvId,17,4
+DevEvText,17,DHCP RENEW sent - No response for IPv4;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,18,25/01/2020 04:03:22
+DevEvId,18,4
+DevEvText,18,DHCP REBIND WARNING - Field invalid in response;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,19,25/01/2020 04:03:22
+DevEvId,19,6
+DevEvText,19,DHCP Renew - lease parameters tftp file-cmreg-vmdg505-rtsxxl35016u+voc-b.cm modified;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
+DevEvFirstTimeOid,20,25/01/2020 10:56:16
+DevEvId,20,3
+DevEvText,20,No Ranging Response received - T3 time-out;CM-MAC=18:35:d1:ba:b1:fb;CMTS-MAC=28:52:61:fb:e5:d1;CM-QOS=1.1;CM-VER=3.0;
