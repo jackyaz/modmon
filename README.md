@@ -5,7 +5,7 @@
 ## v0.0.1
 ### Updated on 2020-01-22
 ## About
-Track your Superhub 3'ss stats (such as signal power levels), on your router. Graphs available for on the Tools page of the WebUI.
+Track your Superhub 3's stats (such as signal power levels), on your router. Graphs available for on the Tools page of the WebUI.
 
 modmon is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
 
@@ -23,7 +23,7 @@ All models supported by [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/about). Mo
 *   RT-AC86U
 
 ### Firmware versions
-You must be running firmware no earlier than 384.XX [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/)
+You must be running firmware no earlier than 384.15 [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/)
 
 ## Installation
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
