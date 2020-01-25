@@ -383,7 +383,7 @@ WriteStats_ToJS(){
 	printf "%s\\r\\n}\\r\\n" "$html" >> "$2"
 }
 
-#$1 fieldname $2 tablename $3 frequency (hours) $4 length (days) $5 outputfile $6 sqlfile $7 timestamp
+#$1 fieldname $2 tablename $3 frequency (hours) $4 length (days) $5 outputfile $6 sqlfile $7 timestamp $8 channelnum
 WriteSql_ToFile(){
 	{
 		echo ".mode csv"
@@ -392,7 +392,7 @@ WriteSql_ToFile(){
 	COUNTER=0
 	timenow="$7"
 	until [ $COUNTER -gt "$((24*$4/$3))" ]; do
-		echo "select $timenow - ((60*60*$3)*($COUNTER)),IFNULL(avg([$1]),'NaN') from $2 WHERE ([Timestamp] >= $timenow - ((60*60*$3)*($COUNTER+1))) AND ([Timestamp] <= $timenow - ((60*60*$3)*$COUNTER));" >> "$6"
+		echo "select $timenow - ((60*60*$3)*($COUNTER)),IFNULL(avg([$1]),'NaN') from $2 WHERE ([Timestamp] >= $timenow - ((60*60*$3)*($COUNTER+1))) AND ([Timestamp] <= $timenow - ((60*60*$3)*$COUNTER)) AND [ChannelNum] = $8;" >> "$6"
 		COUNTER=$((COUNTER + 1))
 	done
 }
@@ -407,37 +407,64 @@ Generate_Stats(){
 	TZ=$(cat /etc/TZ)
 	export TZ
 	timestamp="$(date '+%s')"
+	shstatsfile="/tmp/shstats.csv"
 	metriclist="RxPwr RxMer RxSnr TxPwr PstRs T3Out T4Out"
 	
-	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/T3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/T4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/PstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "/tmp/shstats.csv"
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/T3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/T4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/PstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 	
 	if [ "$(cat /tmp/shstats.csv | wc -l)" -gt 1 ]; then
 		rm -f "$SCRIPT_DIR/modstatsdata.js"
+		rm -f /tmp/modmon-stats.sql
 		for metric in $metriclist; do
 		{
-			echo "$metric"
-			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] INTEGER NOT NULL);" > /tmp/modmon-stats.sql
+			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] REAL NOT NULL);" >> /tmp/modmon-stats.sql
+			
+			channelcount="$(grep -c $metric $shstatsfile)"
+			
+			counter=1
+			until [ $counter -gt "$channelcount" ]; do
+				measurement="$(grep $metric $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timestamp,$counter,$measurement);" >> /tmp/modmon-stats.sql
+				counter=$((counter + 1))
+			done
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			rm -f /tmp/modmon-stats.sql
+		}
+		done
+		
+		for metric in $metriclist; do
+		{
+			channelcount="$(grep -c $metric $shstatsfile)"
 			
-			echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timestamp,1,1);" > /tmp/modmon-stats.sql
+			counter=1
+			until [ $counter -gt "$channelcount" ]; do
+					{
+						echo ".mode csv"
+						echo ".output /tmp/modmon-""$metric""daily-$counter.csv"
+						echo "select [Timestamp],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400) AND [ChannelNum] = $counter;"
+					} >> /tmp/modmon-stats.sql
+					
+					WriteSql_ToFile "Measurement" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly-$counter.csv" "/tmp/modmon-stats.sql" "$timestamp" "$counter"
+					WriteSql_ToFile "Measurement" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly-$counter.csv" "/tmp/modmon-stats.sql" "$timestamp" "$counter"
+					
+					counter=$((counter + 1))
+				done
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			rm -f /tmp/modmon-stats.sql
+		}
+		done
+		
+		for metric in $metriclist; do
+		{
+			channelcount="$(grep -c $metric $shstatsfile)"
 			
-			{
-				echo ".mode csv"
-				echo ".output /tmp/modmon-""$metric""daily.csv"
-				echo "select [Timestamp],[ChannelNum],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400);"
-			} > /tmp/modmon-stats.sql
-			
-			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			
-			WriteSql_ToFile "Measurement" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly.csv" "/tmp/modmon-stats.sql" "$timestamp"
-			WriteSql_ToFile "Measurement" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly.csv" "/tmp/modmon-stats.sql" "$timestamp"
-			
-			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			
-			WriteData_ToJS "/tmp/modmon-""$metric""daily.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily"
-			WriteData_ToJS "/tmp/modmon-""$metric""weekly.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly"
-			WriteData_ToJS "/tmp/modmon-""$metric""monthly.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Monthly"
+			counter=1
+			until [ $counter -gt "$channelcount" ]; do
+					WriteData_ToJS "/tmp/modmon-""$metric""daily-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily""$counter"
+					WriteData_ToJS "/tmp/modmon-""$metric""weekly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly""$counter"
+					WriteData_ToJS "/tmp/modmon-""$metric""monthly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Monthly""$counter"
+					counter=$((counter + 1))
+				done
 		}
 		done
 		echo "Superhub stats retrieved on $timestamp" > "/tmp/modstatstitle.txt"
@@ -449,7 +476,7 @@ Generate_Stats(){
 	rm -f "/tmp/modmon-stats.sql"
 	rm -f "/tmp/modstatstitle.txt"
 	rm -f "/tmp/modmon-"*".csv"
-	rm -f "/tmp/shstats.csv"
+	#rm -f "$shstatsfile"
 }
 
 Shortcut_script(){
