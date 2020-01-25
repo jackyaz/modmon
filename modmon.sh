@@ -416,20 +416,20 @@ Generate_Stats(){
 		
 		{
 			echo ".mode csv"
-			echo ".output /tmp/modmon-$metric""daily.csv"
+			echo ".output /tmp/modmon-""$metric""daily.csv"
 			echo "select [Timestamp],[ChannelNum],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400);"
 		} > /tmp/modmon-stats.sql
 		
 		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 		
-		WriteSql_ToFile "$metric" "modstats_$metric" 1 7 "/tmp/modmon-$metric""weekly.csv" "/tmp/modmon-stats.sql" "$timestamp"
-		WriteSql_ToFile "$metric" "modstats_$metric" 3 30 "/tmp/modmon-$metric""monthly.csv" "/tmp/modmon-stats.sql" "$timestamp"
+		WriteSql_ToFile "$metric" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly.csv" "/tmp/modmon-stats.sql" "$timestamp"
+		WriteSql_ToFile "$metric" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly.csv" "/tmp/modmon-stats.sql" "$timestamp"
 		
 		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 		
-		WriteData_ToJS "/tmp/modmon-$metric""daily.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily"
-		WriteData_ToJS "/tmp/modmon-$metric""weekly.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly"
-		WriteData_ToJS "/tmp/modmon-$metric""monthly.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Monthly"
+		WriteData_ToJS "/tmp/modmon-""$metric""daily.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily"
+		WriteData_ToJS "/tmp/modmon-""$metric""weekly.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly"
+		WriteData_ToJS "/tmp/modmon-""$metric""monthly.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Monthly"
 	}
 	done
 	echo "Superhub stats retrieved on $timestamp" > "/tmp/modstatstitle.txt"
