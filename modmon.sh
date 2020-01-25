@@ -424,8 +424,8 @@ Generate_Stats(){
 		
 		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 		
-		WriteSql_ToFile "$metric" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly.csv" "/tmp/modmon-stats.sql" "$timestamp"
-		WriteSql_ToFile "$metric" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly.csv" "/tmp/modmon-stats.sql" "$timestamp"
+		WriteSql_ToFile "Measurement" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly.csv" "/tmp/modmon-stats.sql" "$timestamp"
+		WriteSql_ToFile "Measurement" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly.csv" "/tmp/modmon-stats.sql" "$timestamp"
 		
 		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 		
