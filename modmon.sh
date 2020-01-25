@@ -408,43 +408,48 @@ Generate_Stats(){
 	export TZ
 	timestamp="$(date '+%s')"
 	metriclist="RxPwr RxMer RxSnr TxPwr PstRs T3Out T4Out"
-	rm -f "$SCRIPT_DIR/modstatsdata.js"
 	
-	for metric in $metriclist; do
-	{
-		echo "$metric"
-		echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] INTEGER NOT NULL);" > /tmp/modmon-stats.sql
-		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-		
-		echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timestamp,1,1);" > /tmp/modmon-stats.sql
-		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-		
+	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/T3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/T4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/PstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "/tmp/shstats.csv"
+	
+	if [ "$(cat /tmp/shstats.csv | wc -l)" -gt 1 ]; then
+		rm -f "$SCRIPT_DIR/modstatsdata.js"
+		for metric in $metriclist; do
 		{
-			echo ".mode csv"
-			echo ".output /tmp/modmon-""$metric""daily.csv"
-			echo "select [Timestamp],[ChannelNum],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400);"
-		} > /tmp/modmon-stats.sql
-		
-		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-		
-		WriteSql_ToFile "Measurement" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly.csv" "/tmp/modmon-stats.sql" "$timestamp"
-		WriteSql_ToFile "Measurement" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly.csv" "/tmp/modmon-stats.sql" "$timestamp"
-		
-		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-		
-		WriteData_ToJS "/tmp/modmon-""$metric""daily.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily"
-		WriteData_ToJS "/tmp/modmon-""$metric""weekly.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly"
-		WriteData_ToJS "/tmp/modmon-""$metric""monthly.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Monthly"
-	}
-	done
-	echo "Superhub stats retrieved on $timestamp" > "/tmp/modstatstitle.txt"
-	
-	WriteStats_ToJS "/tmp/modstatstitle.txt" "$SCRIPT_DIR/modstatstext.js" "SetModStatsTitle" "statstitle"
-	Print_Output "false" "Superhub stats successfully retrieved" "$PASS"
-	
+			echo "$metric"
+			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] INTEGER NOT NULL);" > /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			
+			echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timestamp,1,1);" > /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			
+			{
+				echo ".mode csv"
+				echo ".output /tmp/modmon-""$metric""daily.csv"
+				echo "select [Timestamp],[ChannelNum],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400);"
+			} > /tmp/modmon-stats.sql
+			
+			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			
+			WriteSql_ToFile "Measurement" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly.csv" "/tmp/modmon-stats.sql" "$timestamp"
+			WriteSql_ToFile "Measurement" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly.csv" "/tmp/modmon-stats.sql" "$timestamp"
+			
+			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			
+			WriteData_ToJS "/tmp/modmon-""$metric""daily.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily"
+			WriteData_ToJS "/tmp/modmon-""$metric""weekly.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly"
+			WriteData_ToJS "/tmp/modmon-""$metric""monthly.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Monthly"
+		}
+		done
+		echo "Superhub stats retrieved on $timestamp" > "/tmp/modstatstitle.txt"
+		WriteStats_ToJS "/tmp/modstatstitle.txt" "$SCRIPT_DIR/modstatstext.js" "SetModStatsTitle" "statstitle"
+		Print_Output "false" "Superhub stats successfully retrieved" "$PASS"
+	else
+		Print_Output "true" "Something went wrong trying to retrieve Superhub stats" "$ERR"
+	fi
 	rm -f "/tmp/modmon-stats.sql"
 	rm -f "/tmp/modstatstitle.txt"
 	rm -f "/tmp/modmon-"*".csv"
+	rm -f "/tmp/shstats.csv"
 }
 
 Shortcut_script(){
