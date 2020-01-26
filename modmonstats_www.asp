@@ -366,48 +366,18 @@ function ToggleFill() {
 
 function RedrawAllCharts() {
 	var chartlist = ["Daily","Weekly","Monthly"];
+	var unitlist = ["hour","day","day"];
+	var intervallist = [24,7,30];
 	
 	for (i = 0; i < chartlist.length; i++) {
-		var unit, interval;
-		if(i==0){unit="hour";interval=24;};else if (i==1){unit="day";interval=7;};else {unit="day";interval=30;};
-		Draw_Chart(chartlist[i]+"_RxPwr","Downstream Power","dBmV",unit,interval,"#fc8500");
+		Draw_Chart(chartlist[i]+"_RxPwr","Downstream Power","dBmV",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart(chartlist[i]+"_RxSnr","Downstream SNR","dB",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart(chartlist[i]+"_TxPwr","Upstream Power","dBmV",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart(chartlist[i]+"_PstRs","Post-RS Errors","",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart(chartlist[i]+"_T3Out","T3 Timeouts","",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart(chartlist[i]+"_T4Out","T4 Timeouts","",unitlist[i],intervallist[i],"#fc8500");
 	}
-	
-	for (i = 0; i < chartlist.length; i++) {
-		var unit, interval;
-		if(i==0){unit="hour";interval=24;};else if (i==1){unit="day";interval=7;};else {unit="day";interval=30;};
-		Draw_Chart(chartlist[i]+"_RxMer","Downstream Power","dBmV",unit,interval,"#fc8500");
-	}
-	
-	for (i = 0; i < chartlist.length; i++) {
-		var unit, interval;
-		if(i==0){unit="hour";interval=24;};else if (i==1){unit="day";interval=7;};else {unit="day";interval=30;};
-		Draw_Chart(chartlist[i]+"_RxSnr","Downstream SNR","dB",unit,interval,"#fc8500");
-	}
-	
-	for (i = 0; i < chartlist.length; i++) {
-		var unit, interval;
-		if(i==0){unit="hour";interval=24;};else if (i==1){unit="day";interval=7;};else {unit="day";interval=30;};
-		Draw_Chart(chartlist[i]+"_TxPwr","Upstream Power","dBmV",unit,interval,"#fc8500");
-	}
-	
-	for (i = 0; i < chartlist.length; i++) {
-		var unit, interval;
-		if(i==0){unit="hour";interval=24;};else if (i==1){unit="day";interval=7;};else {unit="day";interval=30;};
-		Draw_Chart(chartlist[i]+"_PstRs","Post-RS Errors","",unit,interval,"#fc8500");
-	}
-	
-	for (i = 0; i < chartlist.length; i++) {
-		var unit, interval;
-		if(i==0){unit="hour";interval=24;};else if (i==1){unit="day";interval=7;};else {unit="day";interval=30;};
-		Draw_Chart(chartlist[i]+"_T3Out","T3 Timeouts","",unit,interval,"#fc8500");
-	}
-	
-	for (i = 0; i < chartlist.length; i++) {
-		var unit, interval;
-		if(i==0){unit="hour";interval=24;};else if (i==1){unit="day";interval=7;};else {unit="day";interval=30;};
-		Draw_Chart(chartlist[i]+"_T4Out","T4 Timeouts","",unit,interval,"#fc8500");
-	}
+}
 
 function GetCookie(cookiename) {
 	var s;
