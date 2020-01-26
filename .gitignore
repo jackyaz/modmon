@@ -2,5 +2,3 @@
 *.tags1
 Ziggo_Arris_Modem-Grafana.json
 sample output.txt
-modstats.db
-modstatsdata.js
