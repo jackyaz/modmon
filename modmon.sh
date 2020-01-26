@@ -423,7 +423,7 @@ Generate_Stats(){
 	export TZ
 	timestamp="$(date '+%s')"
 	shstatsfile="/tmp/shstats.csv"
-	metriclist="RxPwr RxSnr TxPwr PstRs T3Out T4Out"
+	metriclist="RxPwr RxSnr TxPwr TxPstRs TxT3Out TxT4Out"
 	
 	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/T3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/T4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/PstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 	
@@ -503,7 +503,7 @@ Generate_Stats(){
 	rm -f "/tmp/modmon-stats.sql"
 	rm -f "/tmp/modstatstitle.txt"
 	rm -f "/tmp/modmon-"*".csv"
-	#rm -f "$shstatsfile"
+	rm -f "$shstatsfile"
 }
 
 Shortcut_script(){

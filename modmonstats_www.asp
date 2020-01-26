@@ -116,7 +116,6 @@ td.nodata {
 <script language="JavaScript" type="text/javascript" src="/ext/modmon/modstatstext.js"></script>
 <script>
 var ShowLines=GetCookie("ShowLines");
-var ShowFill=GetCookie("ShowFill");
 Chart.defaults.global.defaultFontColor = "#CCC";
 Chart.Tooltip.positioners.cursor = function(chartElements, coordinates) {
   return coordinates;
@@ -139,8 +138,8 @@ function Draw_Chart_NoData(txtchartname){
 
 function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname){
 	var objchartname=window["LineChart"+txtchartname];
-	var txtdataname="Data"+txtchartname;
-	var objdataname=window["Data"+txtchartname];
+	var txtdataname="array"+txtchartname;
+	var objdataname=window["array"+txtchartname];
 	if(typeof objdataname === 'undefined' || objdataname === null) { Draw_Chart_NoData(txtchartname); return; }
 	if (objdataname.length == 0) { Draw_Chart_NoData(txtchartname); return; }
 	factor=0;
@@ -159,12 +158,19 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 		animationSteps : 100,
 		maintainAspectRatio: false,
 		animateScale : true,
-		legend: { display: false, position: "bottom", onClick: null },
+		legend: {
+			display: true,
+			position: "bottom",
+			labels: {
+				boxWidth: 10,
+				fontSize: 10
+			}
+		},
 		title: { display: true, text: txttitle },
 		tooltips: {
 			callbacks: {
 					title: function (tooltipItem, data) { return (moment(tooltipItem[0].xLabel).format('YYYY-MM-DD HH:mm:ss')); },
-					label: function (tooltipItem, data) { return data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index].y.toString() + ' ' + txtunity;}
+					label: function (tooltipItem, data) { return data.datasets[tooltipItem.datasetIndex].label + ": " + data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index].y.toString() + ' ' + txtunity;}
 				},
 				mode: 'point',
 				position: 'cursor',
@@ -197,11 +203,11 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 					mode: 'xy',
 					rangeMin: {
 						x: new Date().getTime() - (factor * numunitx),
-						y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
+						//y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
 					},
 					rangeMax: {
 						x: new Date().getTime(),
-						y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
+						//y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
 					},
 				},
 				zoom: {
@@ -209,11 +215,11 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 					mode: 'xy',
 					rangeMin: {
 						x: new Date().getTime() - (factor * numunitx),
-						y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
+						//y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
 					},
 					rangeMax: {
 						x: new Date().getTime(),
-						y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
+						//y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
 					},
 					speed: 0.1
 				},
@@ -226,7 +232,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				value: getAverage(objdataname),
+				//value: getAverage(objdataname),
 				borderColor: colourname,
 				borderWidth: 1,
 				borderDash: [5, 5],
@@ -243,7 +249,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					content: "Avg=" + round(getAverage(objdataname),3).toFixed(3)+txtunity,
+					//content: "Avg=" + round(getAverage(objdataname),3).toFixed(3)+txtunity,
 				}
 			},
 			{
@@ -251,7 +257,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				value: getLimit(txtdataname,"y","max"),
+				//value: getLimit(txtdataname,"y","max"),
 				borderColor: colourname,
 				borderWidth: 1,
 				borderDash: [5, 5],
@@ -268,7 +274,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					content: "Max=" + round(getLimit(txtdataname,"y","max"),3).toFixed(3)+txtunity,
+					//content: "Max=" + round(getLimit(txtdataname,"y","max"),3).toFixed(3)+txtunity,
 				}
 			},
 			{
@@ -276,7 +282,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				value: getLimit(txtdataname,"y","min"),
+				//value: getLimit(txtdataname,"y","min"),
 				borderColor: colourname,
 				borderWidth: 1,
 				borderDash: [5, 5],
@@ -293,21 +299,13 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					content: "Min=" + round(getLimit(txtdataname,"y","min"),3).toFixed(3)+txtunity,
+					//content: "Min=" + round(getLimit(txtdataname,"y","min"),3).toFixed(3)+txtunity,
 				}
 			}]
 		}
 	};
 	var lineDataset = {
-		datasets: [{data: objdataname,
-			label: txttitle,
-			borderWidth: 1,
-			pointRadius: 1,
-			lineTension: 0,
-			fill: ShowFill,
-			backgroundColor: colourname,
-			borderColor: colourname,
-		}]
+		datasets: getDataSets(objdataname, txttitle, colourname)
 	};
 	objchartname = new Chart(ctx, {
 		type: 'line',
@@ -315,6 +313,14 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 		data: lineDataset
 	});
 	window["LineChart"+txtchartname]=objchartname;
+}
+
+function getDataSets(arrayname,txttitle,colourname) {
+	var datasets = [];
+	for(var i = 0; i < arrayname.length; i++) {
+		datasets.push({data: arrayname[i], label: "Ch. " + (i+1).toString(), borderWidth: 1, pointRadius: 1, lineTension: 0, fill: false, backgroundColor: colourname, borderColor: colourname});
+	}
+	return datasets;
 }
 
 function getLimit(datasetname,axis,maxmin) {
@@ -336,6 +342,21 @@ function round(value, decimals) {
 	return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 }
 
+function getRandomColor() {
+	var r = Math.floor(Math.random() * 255);
+	var g = Math.floor(Math.random() * 255);
+	var b = Math.floor(Math.random() * 255);
+	return "rgba(" + r + "," + g + "," + b + ", 1)";
+}
+
+function poolColors(a) {
+	var pool = [];
+	for(i = 0; i < a; i++) {
+		pool.push(getRandomColor());
+	}
+	return pool;
+}
+
 function ToggleLines() {
 	if(interfacelist != ""){
 		if(ShowLines == ""){
@@ -350,32 +371,18 @@ function ToggleLines() {
 	}
 }
 
-function ToggleFill() {
-	if(interfacelist != ""){
-		if(ShowFill == "origin"){
-			ShowFill = false;
-			SetCookie("ShowFill",false)
-		}
-		else {
-			ShowFill = "origin";
-			SetCookie("ShowFill","origin")
-		}
-		RedrawAllCharts();
-	}
-}
-
 function RedrawAllCharts() {
-	var chartlist = ["Daily","Weekly","Monthly"];
+	var chartlist = ["daily","weekly","monthly"];
 	var unitlist = ["hour","day","day"];
 	var intervallist = [24,7,30];
 	
 	for (i = 0; i < chartlist.length; i++) {
-		Draw_Chart(chartlist[i]+"_RxPwr","Downstream Power","dBmV",unitlist[i],intervallist[i],"#fc8500");
-		Draw_Chart(chartlist[i]+"_RxSnr","Downstream SNR","dB",unitlist[i],intervallist[i],"#fc8500");
-		Draw_Chart(chartlist[i]+"_TxPwr","Upstream Power","dBmV",unitlist[i],intervallist[i],"#fc8500");
-		Draw_Chart(chartlist[i]+"_PstRs","Post-RS Errors","",unitlist[i],intervallist[i],"#fc8500");
-		Draw_Chart(chartlist[i]+"_T3Out","T3 Timeouts","",unitlist[i],intervallist[i],"#fc8500");
-		Draw_Chart(chartlist[i]+"_T4Out","T4 Timeouts","",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart("RxPwr"+chartlist[i],"Downstream Power","dBmV",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart("RxSnr"+chartlist[i],"Downstream SNR","dB",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart("TxPwr"+chartlist[i],"Upstream Power","dBmV",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart("TxPstRs"+chartlist[i],"Post-RS Errors","",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart("TxT3Out"+chartlist[i],"T3 Timeouts","",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart("TxT4Out"+chartlist[i],"T4 Timeouts","",unitlist[i],intervallist[i],"#fc8500");
 	}
 }
 
@@ -401,7 +408,7 @@ function SetCurrentPage(){
 function initial(){
 	SetCurrentPage();
 	show_menu();
-	var metriclist = ["RxPwr","RxSnr","TxPwr","PstRs","T3Out","T4Out"];
+	var metriclist = ["RxPwr","RxSnr","TxPwr","TxPstRs","TxT3Out","TxT4Out"];
 	metriclist = metriclist.reverse();
 	
 	var titlelist = ["Downstream Power","Downstream SNR","Upstream Power","Post-RS Errors","T3 Timeouts","T4 Timeouts"];
@@ -451,7 +458,7 @@ function BuildMetricTable(name,title){
 	charthtml+='<tr>'
 	charthtml+='<td colspan="2" align="center" style="padding: 0px;">'
 	charthtml+='<div class="collapsiblecontent">'
-	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChartDaily_'+name+'" height="300" /></div>'
+	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'daily" height="300" /></div>'
 	charthtml+='</div>'
 	charthtml+='</td>'
 	charthtml+='</tr>'
@@ -466,7 +473,7 @@ function BuildMetricTable(name,title){
 	charthtml+='<tr>'
 	charthtml+='<td colspan="2" align="center" style="padding: 0px;">'
 	charthtml+='<div class="collapsiblecontent">'
-	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChartWeekly_'+name+'" height="300" /></div>'
+	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'weekly" height="300" /></div>'
 	charthtml+='</div>'
 	charthtml+='</td>'
 	charthtml+='</tr>'
@@ -481,7 +488,7 @@ function BuildMetricTable(name,title){
 	charthtml+='<tr>'
 	charthtml+='<td colspan="2" align="center" style="padding: 0px;">'
 	charthtml+='<div class="collapsiblecontent">'
-	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChartMonthly_'+name+'" height="300" /></div>'
+	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'monthly" height="300" /></div>'
 	charthtml+='</div>'
 	charthtml+='</td>'
 	charthtml+='</tr>'
@@ -584,8 +591,6 @@ function AddEventHandlers(){
 <input type="button" onclick="RedrawAllCharts();" value="Reset Zoom" class="button_gen" name="button">
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <input type="button" onclick="ToggleLines();" value="Toggle Lines" class="button_gen" name="button">
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<input type="button" onclick="ToggleFill();" value="Toggle Fill" class="button_gen" name="button">
 </td>
 </tr>
 </table>
