@@ -379,8 +379,8 @@ function RedrawAllCharts() {
 	for (i = 0; i < chartlist.length; i++) {
 		Draw_Chart("RxPwr"+chartlist[i],"Downstream Power","dBmV",unitlist[i],intervallist[i],"#fc8500");
 		Draw_Chart("RxSnr"+chartlist[i],"Downstream SNR","dB",unitlist[i],intervallist[i],"#fc8500");
+		Draw_Chart("RxPstRs"+chartlist[i],"Post-RS Errors","",unitlist[i],intervallist[i],"#fc8500");
 		Draw_Chart("TxPwr"+chartlist[i],"Upstream Power","dBmV",unitlist[i],intervallist[i],"#fc8500");
-		Draw_Chart("TxPstRs"+chartlist[i],"Post-RS Errors","",unitlist[i],intervallist[i],"#fc8500");
 		Draw_Chart("TxT3Out"+chartlist[i],"T3 Timeouts","",unitlist[i],intervallist[i],"#fc8500");
 		Draw_Chart("TxT4Out"+chartlist[i],"T4 Timeouts","",unitlist[i],intervallist[i],"#fc8500");
 	}
@@ -408,10 +408,10 @@ function SetCurrentPage(){
 function initial(){
 	SetCurrentPage();
 	show_menu();
-	var metriclist = ["RxPwr","RxSnr","TxPwr","TxPstRs","TxT3Out","TxT4Out"];
+	var metriclist = ["RxPwr","RxSnr","RxPstRs","TxPwr","TxT3Out","TxT4Out"];
 	metriclist = metriclist.reverse();
 	
-	var titlelist = ["Downstream Power","Downstream SNR","Upstream Power","Post-RS Errors","T3 Timeouts","T4 Timeouts"];
+	var titlelist = ["Downstream Power","Downstream SNR","Post-RS Errors","Upstream Power","T3 Timeouts","T4 Timeouts"];
 	titlelist = titlelist.reverse();
 	
 	for (i = 0; i < metriclist.length; i++) {
