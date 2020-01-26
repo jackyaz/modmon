@@ -116,10 +116,32 @@ td.nodata {
 <script language="JavaScript" type="text/javascript" src="/ext/modmon/modstatstext.js"></script>
 <script>
 var ShowLines=GetCookie("ShowLines");
+
+var metriclist = ["RxPwr","RxSnr","RxPstRs","TxPwr","TxT3Out","TxT4Out"];
+var titlelist = ["Downstream Power","Downstream SNR","Post-RS Errors","Upstream Power","T3 Timeouts","T4 Timeouts"];
+var measureunitlist = ["dBmV","dB","","dBmV","",""];
+var chartlist = ["daily","weekly","monthly"];
+var timeunitlist = ["hour","day","day"];
+var intervallist = [24,7,30];
+
 Chart.defaults.global.defaultFontColor = "#CCC";
 Chart.Tooltip.positioners.cursor = function(chartElements, coordinates) {
-  return coordinates;
+	return coordinates;
 };
+
+Array.max = function( array ){
+	return Math.max.apply( Math, array );
+};
+
+Array.min = function( array ){
+	return Math.min.apply( Math, array );
+};
+
+var RxColourCount,TxColourCount,RxColours,TxColours;
+RxColourCount = [];
+TxColourCount = [];
+RxColours = [];
+TxColours = [];
 
 function Draw_Chart_NoData(txtchartname){
 	document.getElementById("divLineChart"+txtchartname).width="730";
@@ -136,7 +158,7 @@ function Draw_Chart_NoData(txtchartname){
 	ctx.restore();
 }
 
-function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname){
+function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 	var objchartname=window["LineChart"+txtchartname];
 	var txtdataname="array"+txtchartname;
 	var objdataname=window["array"+txtchartname];
@@ -204,11 +226,11 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 					mode: 'xy',
 					rangeMin: {
 						x: new Date().getTime() - (factor * numunitx),
-						//y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
+						y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
 					},
 					rangeMax: {
 						x: new Date().getTime(),
-						//y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
+						y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
 					},
 				},
 				zoom: {
@@ -216,11 +238,11 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 					mode: 'xy',
 					rangeMin: {
 						x: new Date().getTime() - (factor * numunitx),
-						//y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
+						y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
 					},
 					rangeMax: {
 						x: new Date().getTime(),
-						//y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
+						y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
 					},
 					speed: 0.1
 				},
@@ -233,8 +255,8 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				//value: getAverage(objdataname),
-				borderColor: colourname,
+				value: getAverage(objdataname),
+				borderColor: "#fc8500",
 				borderWidth: 1,
 				borderDash: [5, 5],
 				label: {
@@ -250,7 +272,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					//content: "Avg=" + round(getAverage(objdataname),3).toFixed(3)+txtunity,
+					content: "Avg=" + round(getAverage(objdataname),3).toFixed(3)+txtunity,
 				}
 			},
 			{
@@ -258,8 +280,8 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				//value: getLimit(txtdataname,"y","max"),
-				borderColor: colourname,
+				value: getLimit(txtdataname,"y","max"),
+				borderColor: "#fc8500",
 				borderWidth: 1,
 				borderDash: [5, 5],
 				label: {
@@ -275,7 +297,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					//content: "Max=" + round(getLimit(txtdataname,"y","max"),3).toFixed(3)+txtunity,
+					content: "Max=" + round(getLimit(txtdataname,"y","max"),3).toFixed(3)+txtunity,
 				}
 			},
 			{
@@ -283,8 +305,8 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				//value: getLimit(txtdataname,"y","min"),
-				borderColor: colourname,
+				value: getLimit(txtdataname,"y","min"),
+				borderColor: "#fc8500",
 				borderWidth: 1,
 				borderDash: [5, 5],
 				label: {
@@ -300,13 +322,13 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					//content: "Min=" + round(getLimit(txtdataname,"y","min"),3).toFixed(3)+txtunity,
+					content: "Min=" + round(getLimit(txtdataname,"y","min"),3).toFixed(3)+txtunity,
 				}
 			}]
 		}
 	};
 	var lineDataset = {
-		datasets: getDataSets(objdataname, txttitle, colourname)
+		datasets: getDataSets(txtdataname, txttitle)
 	};
 	objchartname = new Chart(ctx, {
 		type: 'line',
@@ -316,21 +338,77 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 	window["LineChart"+txtchartname]=objchartname;
 }
 
-function getDataSets(arrayname,txttitle,colourname) {
+function getDataSets(txtarrayname,txttitle) {
 	var datasets = [];
+	var arrayname = window[txtarrayname];
+	colourname="#fc8500";
+
 	for(var i = 0; i < arrayname.length; i++) {
+		if(txtarrayname.indexOf("Rx") != -1){
+			colourname=RxColours[i];
+		}
+		else {
+			colourname=TxColours[i];
+		}
 		datasets.push({data: arrayname[i], label: "Ch. " + (i+1).toString(), borderWidth: 1, pointRadius: 1, lineTension: 0, fill: false, backgroundColor: colourname, borderColor: colourname});
 	}
 	return datasets;
 }
 
 function getLimit(datasetname,axis,maxmin) {
+	limit = 0;
+	var limits = [];
+	var objdataname = window[datasetname];
+	for(var i = 0; i < objdataname.length; i++) {
+		limits.push(getDataSetLimit(objdataname[i],axis,maxmin));
+	}
+	limit = getDataLimit(limits,maxmin);
+	return limit;
+}
+
+function getDataLimit(dataset,maxmin) {
 	limit=0;
-	eval("limit=Math."+maxmin+".apply(Math, "+datasetname+".map(function(o) { return o."+axis+";} ))");
+	if(maxmin == "max") {
+		limit = Array.max(dataset);
+	} else {
+		limit = Array.min(dataset);
+	}
+	return limit;
+}
+
+function getDataSetLimit(dataset,axis,maxmin) {
+	limit=0;
+	if(maxmin == "max") {
+		if(axis == "x") {
+			limit=Math.max.apply(Math, dataset.map(function(o) { return o.x;} ))
+		} else {
+			limit=Math.max.apply(Math, dataset.map(function(o) { return o.y;} ))
+		}
+	} else {
+		if(axis == "x") {
+			limit=Math.min.apply(Math, dataset.map(function(o) { return o.x;} ))
+		} else {
+			limit=Math.min.apply(Math, dataset.map(function(o) { return o.y;} ))
+		}
+	}
 	return limit;
 }
 
 function getAverage(datasetname) {
+	var total = 0;
+	var totals = [];
+	for(var i = 0; i < datasetname.length; i++) {
+		totals.push(getDatasetAverage(datasetname[i]));
+	}
+	
+	for(var i = 0; i < totals.length; i++) {
+		total += totals[i];
+	}
+	var avg = total / totals.length;
+	return avg;
+}
+
+function getDatasetAverage(datasetname) {
 	var total = 0;
 	for(var i = 0; i < datasetname.length; i++) {
 		total += datasetname[i].y;
@@ -359,31 +437,40 @@ function poolColors(a) {
 }
 
 function ToggleLines() {
-	if(interfacelist != ""){
-		if(ShowLines == ""){
-			ShowLines = "line";
-			SetCookie("ShowLines","line")
-		}
-		else {
-			ShowLines = "";
-			SetCookie("ShowLines","")
-		}
-		RedrawAllCharts();
+	if(ShowLines == ""){
+		ShowLines = "line";
+		SetCookie("ShowLines","line")
 	}
+	else {
+		ShowLines = "";
+		SetCookie("ShowLines","")
+	}
+	RedrawAllCharts();
+}
+
+function SetRxTxColours(){
+	for(i = 0; i < metriclist.length; i++){
+		for (i2 = 0; i2 < chartlist.length; i2++) {
+			arrayname="array"+metriclist[i]+chartlist[i2];
+			var objdataname=window[arrayname];
+			if(typeof objdataname === 'undefined' || objdataname === null) { continue; }
+			if(arrayname.indexOf("Rx") != -1){
+				RxColourCount.push(objdataname.length);
+			}
+			else {
+				TxColourCount.push(objdataname.length);
+			}
+		}
+	}
+	RxColours = poolColors(Array.max(RxColourCount));
+	TxColours = poolColors(Array.max(TxColourCount));
 }
 
 function RedrawAllCharts() {
-	var chartlist = ["daily","weekly","monthly"];
-	var unitlist = ["hour","day","day"];
-	var intervallist = [24,7,30];
-	
-	for (i = 0; i < chartlist.length; i++) {
-		Draw_Chart("RxPwr"+chartlist[i],"Downstream Power","dBmV",unitlist[i],intervallist[i],"#fc8500");
-		Draw_Chart("RxSnr"+chartlist[i],"Downstream SNR","dB",unitlist[i],intervallist[i],"#fc8500");
-		Draw_Chart("RxPstRs"+chartlist[i],"Post-RS Errors","",unitlist[i],intervallist[i],"#fc8500");
-		Draw_Chart("TxPwr"+chartlist[i],"Upstream Power","dBmV",unitlist[i],intervallist[i],"#fc8500");
-		Draw_Chart("TxT3Out"+chartlist[i],"T3 Timeouts","",unitlist[i],intervallist[i],"#fc8500");
-		Draw_Chart("TxT4Out"+chartlist[i],"T4 Timeouts","",unitlist[i],intervallist[i],"#fc8500");
+	for(i = 0; i < metriclist.length; i++){
+		for (i2 = 0; i2 < chartlist.length; i2++) {
+			Draw_Chart(metriclist[i]+chartlist[i2],titlelist[i],measureunitlist[i],timeunitlist[i2],intervallist[i2]);
+		}
 	}
 }
 
@@ -409,16 +496,18 @@ function SetCurrentPage(){
 function initial(){
 	SetCurrentPage();
 	show_menu();
-	var metriclist = ["RxPwr","RxSnr","RxPstRs","TxPwr","TxT3Out","TxT4Out"];
-	metriclist = metriclist.reverse();
-	
-	var titlelist = ["Downstream Power","Downstream SNR","Post-RS Errors","Upstream Power","T3 Timeouts","T4 Timeouts"];
-	titlelist = titlelist.reverse();
+	metriclist.reverse();
+	titlelist.reverse();
 	
 	for (i = 0; i < metriclist.length; i++) {
 		$("#table_buttons").after(BuildMetricTable(metriclist[i],titlelist[i]));
 	}
+	
+	metriclist.reverse();
+	titlelist.reverse();
+	
 	AddEventHandlers();
+	SetRxTxColours();
 	RedrawAllCharts();
 	SetModStatsTitle();
 }
