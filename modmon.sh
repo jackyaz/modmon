@@ -425,6 +425,7 @@ Generate_Stats(){
 	TZ=$(cat /etc/TZ)
 	export TZ
 	timestamp="$(date '+%s')"
+	timetitle="$(date +"%c")"
 	shstatsfile="/tmp/shstats.csv"
 	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 	
@@ -497,7 +498,7 @@ Generate_Stats(){
 				done
 		}
 		done
-		echo "Superhub stats retrieved on $timestamp" > "/tmp/modstatstitle.txt"
+		echo "Superhub stats retrieved on $timetitle" > "/tmp/modstatstitle.txt"
 		WriteStats_ToJS "/tmp/modstatstitle.txt" "$SCRIPT_DIR/modstatstext.js" "SetModStatsTitle" "statstitle"
 		Print_Output "false" "Superhub stats successfully retrieved" "$PASS"
 	else
