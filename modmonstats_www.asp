@@ -401,9 +401,14 @@ function SetCurrentPage(){
 function initial(){
 	SetCurrentPage();
 	show_menu();
-	var metriclist = ["RxPwr","RxMer","RxSnr","TxPwr","PstRs","T3Out","T4Out"];
+	var metriclist = ["RxPwr","RxSnr","TxPwr","PstRs","T3Out","T4Out"];
+	metriclist = metriclist.reverse();
+	
+	var titlelist = ["Downstream Power","Downstream SNR","Upstream Power","Post-RS Errors","T3 Timeouts","T4 Timeouts"];
+	titlelist = titlelist.reverse();
+	
 	for (i = 0; i < metriclist.length; i++) {
-		$("#table_buttons").after(BuildMetricTable(metriclist[i]));
+		$("#table_buttons").after(BuildMetricTable(metriclist[i],titlelist[i]));
 	}
 	AddEventHandlers();
 	RedrawAllCharts();
@@ -422,12 +427,12 @@ function applyRule() {
 	document.form.submit();
 }
 
-function BuildMetricTable(name){
+function BuildMetricTable(name,title){
 	var charthtml = '<div style="line-height:10px;">&nbsp;</div>'
 	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_metric_'+name+'">'
 	charthtml+='<thead class="collapsibleparent" id="'+name+'">'
 	charthtml+='<tr>'
-	charthtml+='<td colspan="2">'+name+' (click to expand/collapse)</td>'
+	charthtml+='<td colspan="2">'+title+' (click to expand/collapse)</td>'
 	charthtml+='</tr>'
 	charthtml+='</thead>'
 	charthtml+='<tr>'
