@@ -353,9 +353,10 @@ Mount_WebUI(){
 }
 
 WriteData_ToJS(){
-	inputfile="$1"
-	outputfile="$2"
-	shift;shift
+	metricarray="$1"
+	inputfile="$2"
+	outputfile="$3"
+	shift;shift;shift
 	
 	for var in "$@"; do
 	{
@@ -369,6 +370,7 @@ WriteData_ToJS(){
 		done < "$inputfile"
 		contents=$(echo "$contents" | sed 's/,$//')
 		contents="$contents"");"
+		echo "$metricarray.push($var);" >> "$outputfile"
 		printf "%s\\r\\n\\r\\n" "$contents" >> "$outputfile"
 	done
 }
@@ -483,10 +485,11 @@ Generate_Stats(){
 			channelcount="$(grep -c $metric $shstatsfile)"
 			
 			counter=1
+			printf "var array%s = [];" "$metric" >> "$SCRIPT_DIR/modstatsdata.js"
 			until [ $counter -gt "$channelcount" ]; do
-					WriteData_ToJS "/tmp/modmon-""$metric""daily-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily""$counter"
-					WriteData_ToJS "/tmp/modmon-""$metric""weekly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly""$counter"
-					WriteData_ToJS "/tmp/modmon-""$metric""monthly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Monthly""$counter"
+					WriteData_ToJS "array$metric" "/tmp/modmon-""$metric""daily-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily""$counter"
+					WriteData_ToJS "array$metric" "/tmp/modmon-""$metric""weekly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly""$counter"
+					WriteData_ToJS "array$metric" "/tmp/modmon-""$metric""monthly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Monthly""$counter"
 					counter=$((counter + 1))
 				done
 		}
