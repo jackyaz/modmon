@@ -329,6 +329,9 @@ Get_WebUI_Page () {
 }
 
 Mount_WebUI(){
+	if [ ! -f "$SCRIPT_DIR/modmonstats_www.asp" ]; then
+		Download_File "$SCRIPT_REPO/modmonstats_www.asp" "$SCRIPT_DIR/modmonstats_www.asp"
+	fi
 	umount /www/UUAccelerator.asp 2>/dev/null
 	mount -o bind "$SCRIPT_DIR/modmonstats_www.asp" "/www/UUAccelerator.asp"
 	# if [ ! -f "$SCRIPT_DIR/modmonstats_www.asp" ]; then
