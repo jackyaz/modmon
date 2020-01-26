@@ -370,8 +370,8 @@ WriteData_ToJS(){
 		done < "$inputfile"
 		contents=$(echo "$contents" | sed 's/,$//')
 		contents="$contents"");"
-		echo "$metricarray.push($var);" >> "$outputfile"
-		printf "%s\\r\\n\\r\\n" "$contents" >> "$outputfile"
+		printf "%s\\r\\n" "$contents" >> "$outputfile"
+		printf "%s.push(%s);\\r\\n" "$metricarray" "$var" >> "$outputfile"
 	done
 }
 
