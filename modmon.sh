@@ -383,17 +383,30 @@ WriteStats_ToJS(){
 	printf "%s\\r\\n}\\r\\n" "$html" >> "$2"
 }
 
-#$1 fieldname $2 tablename $3 frequency (hours) $4 length (days) $5 outputfile $6 sqlfile $7 timestamp $8 channelnum
+#$1 fieldname $2 tablename $3 frequency (hours) $4 length (days) $5 outputfile $6 sqlfile $7 timestamp
 WriteSql_ToFile(){
-	{
-		echo ".mode csv"
-		echo ".output $5"
-	} >> "$6"
-	COUNTER=0
 	timenow="$7"
-	until [ $COUNTER -gt "$((24*$4/$3))" ]; do
-		echo "select $timenow - ((60*60*$3)*($COUNTER)),IFNULL(avg([$1]),'NaN') from $2 WHERE ([Timestamp] >= $timenow - ((60*60*$3)*($COUNTER+1))) AND ([Timestamp] <= $timenow - ((60*60*$3)*$COUNTER)) AND [ChannelNum] = $8;" >> "$6"
-		COUNTER=$((COUNTER + 1))
+	earliest="$((24*$4/$3))"
+	{
+		echo ".mode list"
+		echo "select count(distinct ChannelNum) from modstats_$metric WHERE [Timestamp] >= ($timenow - ((60*60*$3)*$earliest));"
+	} > "$6"
+	
+	channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < "$6")"
+	rm -f "$6"
+	
+	channelcounter=1
+	until [ $channelcounter -gt "$channelcount" ]; do
+		{
+			echo ".mode csv"
+			echo ".output $5"
+		} >> "$6"
+		COUNTER=0
+		until [ $COUNTER -gt "$((24*$4/$3))" ]; do
+			echo "select $timenow - ((60*60*$3)*($COUNTER)),IFNULL(avg([$1]),'NaN') from $2 WHERE ([Timestamp] >= $timenow - ((60*60*$3)*($COUNTER+1))) AND ([Timestamp] <= $timenow - ((60*60*$3)*$COUNTER)) AND [ChannelNum] = $channelcounter;" >> "$6"
+			COUNTER=$((COUNTER + 1))
+		done
+		channelcounter=$((channelcounter + 1))
 	done
 }
 
@@ -434,21 +447,32 @@ Generate_Stats(){
 		
 		for metric in $metriclist; do
 		{
-			channelcount="$(grep -c $metric $shstatsfile)"
+			{
+				echo ".mode list"
+				echo "select count(distinct ChannelNum) from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400);"
+			} > /tmp/modmon-stats.sql
+			
+			channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql)"
+			rm -f /tmp/modmon-stats.sql
 			
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
-					{
-						echo ".mode csv"
-						echo ".output /tmp/modmon-""$metric""daily-$counter.csv"
-						echo "select [Timestamp],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400) AND [ChannelNum] = $counter;"
-					} >> /tmp/modmon-stats.sql
-					
-					WriteSql_ToFile "Measurement" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly-$counter.csv" "/tmp/modmon-stats.sql" "$timestamp" "$counter"
-					WriteSql_ToFile "Measurement" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly-$counter.csv" "/tmp/modmon-stats.sql" "$timestamp" "$counter"
-					
-					counter=$((counter + 1))
-				done
+				{
+					echo ".mode csv"
+					echo ".output /tmp/modmon-""$metric""daily-$counter.csv"
+					echo "select [Timestamp],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400) AND [ChannelNum] = $counter;"
+				} >> /tmp/modmon-stats.sql
+				
+				counter=$((counter + 1))
+			done
+			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			rm -f /tmp/modmon-stats.sql
+			
+			WriteSql_ToFile "Measurement" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly-$counter.csv" "/tmp/modmon-stats.sql" "$timestamp"
+			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			rm -f /tmp/modmon-stats.sql
+			
+			WriteSql_ToFile "Measurement" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly-$counter.csv" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 		}
