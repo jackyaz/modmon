@@ -485,7 +485,7 @@ Generate_Stats(){
 			channelcount="$(grep -c $metric $shstatsfile)"
 			
 			counter=1
-			printf "var array%s = [];" "$metric" >> "$SCRIPT_DIR/modstatsdata.js"
+			printf "var array%sdaily = [];var array%sweekly = [];var array%smonthly = [];\\n\\r" "$metric" "$metric" "$metric" >> "$SCRIPT_DIR/modstatsdata.js"
 			until [ $counter -gt "$channelcount" ]; do
 					WriteData_ToJS "array$metric""daily" "/tmp/modmon-""$metric""daily-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily""$counter"
 					WriteData_ToJS "array$metric""weekly" "/tmp/modmon-""$metric""weekly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly""$counter"
