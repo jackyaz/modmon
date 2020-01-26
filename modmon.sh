@@ -399,7 +399,7 @@ WriteSql_ToFile(){
 	until [ $channelcounter -gt "$channelcount" ]; do
 		{
 			echo ".mode csv"
-			echo ".output $5"
+			echo ".output $5-$channelcounter.csv"
 		} >> "$6"
 		COUNTER=0
 		until [ $COUNTER -gt "$((24*$4/$3))" ]; do
@@ -468,11 +468,11 @@ Generate_Stats(){
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 			
-			WriteSql_ToFile "Measurement" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly-$counter.csv" "/tmp/modmon-stats.sql" "$timestamp"
+			WriteSql_ToFile "Measurement" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 			
-			WriteSql_ToFile "Measurement" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly-$counter.csv" "/tmp/modmon-stats.sql" "$timestamp"
+			WriteSql_ToFile "Measurement" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 		}
