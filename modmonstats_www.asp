@@ -158,6 +158,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,colourname)
 		animationSteps : 100,
 		maintainAspectRatio: false,
 		animateScale : true,
+		hover: { mode: "point" },
 		legend: {
 			display: true,
 			position: "bottom",
