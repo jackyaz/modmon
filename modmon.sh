@@ -682,7 +682,6 @@ Menu_Install(){
 	Auto_ServiceEvent create 2>/dev/null
 	Shortcut_script create
 	Mount_WebUI
-	Menu_GenerateStats
 	
 	Clear_Lock
 }
