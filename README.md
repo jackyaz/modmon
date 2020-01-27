@@ -9,9 +9,9 @@ Track your Superhub 3's stats (such as signal power levels), on your router. Gra
 
 modmon is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
 
-![Menu UI](https://puu.sh/DPKBK/a17409eb04.png)
+![Menu UI](https://puu.sh/F4nHO/2cb4951f2d.png)
 
-![Graph example](https://puu.sh/DPKCC/a314d9b1a4.png)
+![Graph example](https://puu.sh/F4nIz/4b076a1e1a.png)
 
 ### Supporting development
 Love the script and want to support future development? Any and all donations gratefully received!
