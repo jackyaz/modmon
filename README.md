@@ -47,7 +47,7 @@ If this does not work, you will need to use the full path:
 Launch modmon and select option u
 
 ## Help
-Please post about any issues and problems here: [modmon on SNBForums](https://www.snbforums.com/threads/modmon-virgin-media-superhub-3-monitoring.56163/)
+Please post about any issues and problems here: [modmon on SNBForums](https://www.snbforums.com/threads/webui-for-monitoring-virgin-media-superhub-3-stats.61363/)
 
 ## FAQs
 ### I haven't used scripts before on AsusWRT-Merlin
