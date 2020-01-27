@@ -432,18 +432,18 @@ Generate_Stats(){
 	
 	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 	
-	if [ "$(cat /tmp/shstats.csv | wc -l)" -gt 1 ]; then
+	if [ "$(wc -l < /tmp/shstats.csv )" -gt 1 ]; then
 		echo "" > "$SCRIPT_DIR/modstatsdata.js"
 		rm -f /tmp/modmon-stats.sql
 		for metric in $metriclist; do
 		{
 			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] REAL NOT NULL);" >> /tmp/modmon-stats.sql
 			
-			channelcount="$(grep -c $metric $shstatsfile)"
+			channelcount="$(grep -c "$metric" $shstatsfile)"
 			
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
-				measurement="$(grep $metric $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+				measurement="$(grep "$metric" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
 				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timestamp,$counter,$measurement);" >> /tmp/modmon-stats.sql
 				counter=$((counter + 1))
 			done
@@ -487,7 +487,7 @@ Generate_Stats(){
 		
 		for metric in $metriclist; do
 		{
-			channelcount="$(grep -c $metric $shstatsfile)"
+			channelcount="$(grep -c "$metric" $shstatsfile)"
 			
 			counter=1
 			printf "var array%sdaily = [];var array%sweekly = [];var array%smonthly = [];\\n\\r" "$metric" "$metric" "$metric" >> "$SCRIPT_DIR/modstatsdata.js"
