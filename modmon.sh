@@ -642,8 +642,8 @@ Check_Requirements(){
 		return 1
 	fi
 	
-	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.15)" ]; then
-		Print_Output "true" "Older Merlin firmware detected - $SCRIPT_NAME requires 384.15" "$ERR"
+	if ! nvram get rc_support | grep -qF "am_addons" ; then
+		Print_Output "true" "Older Merlin firmware detected - $SCRIPT_NAME requires 384.15 or later" "$ERR"
 		CHECKSFAILED="true"
 		return 1
 	fi
