@@ -406,12 +406,11 @@ WriteSql_ToFile(){
 		{
 			echo ".mode csv"
 			echo ".output $5-$channelcounter.csv"
+			echo "SELECT Min([Timestamp]) ChunkStart, IFNULL(Avg([Measurement]),'NaN') Value FROM"
+			echo "( SELECT NTILE($((24*$4/$3))) OVER (ORDER BY [Timestamp]) Chunk, * FROM $2 WHERE [ChannelNum] = $channelcounter; ) AS T"
+			echo "GROUP BY Chunk"
+			echo "ORDER BY ChunkStart;"
 		} >> "$6"
-		COUNTER=0
-		until [ $COUNTER -gt "$((24*$4/$3))" ]; do
-			echo "select $timenow - ((60*60*$3)*($COUNTER)),IFNULL(avg([$1]),'NaN') from $2 WHERE ([Timestamp] >= $timenow - ((60*60*$3)*($COUNTER+1))) AND ([Timestamp] <= $timenow - ((60*60*$3)*$COUNTER)) AND [ChannelNum] = $channelcounter;" >> "$6"
-			COUNTER=$((COUNTER + 1))
-		done
 		channelcounter=$((channelcounter + 1))
 	done
 }
