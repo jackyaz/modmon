@@ -403,13 +403,15 @@ WriteSql_ToFile(){
 	
 	channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < "$6")"
 	rm -f "$6"
+	{
+		echo ".mode csv"
+		echo ".output $5.csv"
+	} >> "$6"
 	
 	channelcounter=1
 	until [ $channelcounter -gt "$channelcount" ]; do
 		{
-			echo ".mode csv"
-			echo ".output $5-$channelcounter.csv"
-			echo "SELECT Min([Timestamp]) ChunkStart, IFNULL(Avg([Measurement]),'NaN') Value FROM"
+			echo "SELECT $channelcounter,Min([Timestamp]) ChunkStart, IFNULL(Avg([Measurement]),'NaN') Value FROM"
 			echo "( SELECT NTILE($((24*$4/$3))) OVER (ORDER BY [Timestamp]) Chunk, * FROM $2 WHERE [ChannelNum] = $channelcounter ) AS T"
 			echo "GROUP BY Chunk"
 			echo "ORDER BY ChunkStart;"
@@ -464,43 +466,45 @@ Generate_Stats(){
 			channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql)"
 			rm -f /tmp/modmon-stats.sql
 			
+			{
+				echo ".mode csv"
+				echo ".output /tmp/modmon-""$metric""daily.csv"
+			} > /tmp/modmon-stats.sql
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
-				{
-					echo ".mode csv"
-					echo ".output /tmp/modmon-""$metric""daily-$counter.csv"
-					echo "select [Timestamp],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400) AND [ChannelNum] = $counter;"
-				} >> /tmp/modmon-stats.sql
-				
+				echo "select [ChannelNum],[Timestamp],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400) AND [ChannelNum] = $counter;" >> /tmp/modmon-stats.sql
 				counter=$((counter + 1))
 			done
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			sed -i '1iChannelNum,Time,Value' "/tmp/modmon-""$metric""daily.csv"
 			rm -f /tmp/modmon-stats.sql
 			
 			WriteSql_ToFile "Measurement" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			sed -i '1iChannelNum,Time,Value' "/tmp/modmon-""$metric""weekly.csv"
 			rm -f /tmp/modmon-stats.sql
 			
 			WriteSql_ToFile "Measurement" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			sed -i '1iChannelNum,Time,Value' "/tmp/modmon-""$metric""monthly.csv"
 			rm -f /tmp/modmon-stats.sql
 		}
 		done
 		
-		for metric in $metriclist; do
-		{
-			channelcount="$(grep -c "$metric" $shstatsfile)"
-			
-			counter=1
-			printf "var array%sdaily = [];var array%sweekly = [];var array%smonthly = [];\\n\\r" "$metric" "$metric" "$metric" >> "$SCRIPT_DIR/modstatsdata.js"
-			until [ $counter -gt "$channelcount" ]; do
-					WriteData_ToJS "array$metric""daily" "/tmp/modmon-""$metric""daily-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily""$counter"
-					WriteData_ToJS "array$metric""weekly" "/tmp/modmon-""$metric""weekly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly""$counter"
-					WriteData_ToJS "array$metric""monthly" "/tmp/modmon-""$metric""monthly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Monthly""$counter"
-					counter=$((counter + 1))
-				done
-		}
-		done
+		# for metric in $metriclist; do
+		# {
+		# 	channelcount="$(grep -c "$metric" $shstatsfile)"
+		#
+		# 	counter=1
+		# 	printf "var array%sdaily = [];var array%sweekly = [];var array%smonthly = [];\\n\\r" "$metric" "$metric" "$metric" >> "$SCRIPT_DIR/modstatsdata.js"
+		# 	until [ $counter -gt "$channelcount" ]; do
+		# 			WriteData_ToJS "array$metric""daily" "/tmp/modmon-""$metric""daily-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily""$counter"
+		# 			WriteData_ToJS "array$metric""weekly" "/tmp/modmon-""$metric""weekly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly""$counter"
+		# 			WriteData_ToJS "array$metric""monthly" "/tmp/modmon-""$metric""monthly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Monthly""$counter"
+		# 			counter=$((counter + 1))
+		# 		done
+		# }
+		# done
 		echo "Superhub stats retrieved on $timetitle" > "/tmp/modstatstitle.txt"
 		WriteStats_ToJS "/tmp/modstatstitle.txt" "$SCRIPT_DIR/modstatstext.js" "SetModStatsTitle" "statstitle"
 		Print_Output "false" "Superhub stats successfully retrieved" "$PASS"
@@ -509,7 +513,7 @@ Generate_Stats(){
 	fi
 	rm -f "/tmp/modmon-stats.sql"
 	rm -f "/tmp/modstatstitle.txt"
-	rm -f "/tmp/modmon-"*".csv"
+	#rm -f "/tmp/modmon-"*".csv"
 	rm -f "$shstatsfile"
 }
 
