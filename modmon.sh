@@ -410,7 +410,7 @@ WriteSql_ToFile(){
 			echo ".mode csv"
 			echo ".output $5-$channelcounter.csv"
 			echo "SELECT Min([Timestamp]) ChunkStart, IFNULL(Avg([Measurement]),'NaN') Value FROM"
-			echo "( SELECT NTILE($((24*$4/$3))) OVER (ORDER BY [Timestamp]) Chunk, * FROM $2 WHERE [ChannelNum] = $channelcounter; ) AS T"
+			echo "( SELECT NTILE($((24*$4/$3))) OVER (ORDER BY [Timestamp]) Chunk, * FROM $2 WHERE [ChannelNum] = $channelcounter ) AS T"
 			echo "GROUP BY Chunk"
 			echo "ORDER BY ChunkStart;"
 		} >> "$6"
