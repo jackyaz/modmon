@@ -23,6 +23,7 @@ readonly SCRIPT_WEB_DIR="$SCRIPT_PAGE_DIR/$SCRIPT_NAME"
 readonly SHARED_DIR="/jffs/addons/shared-jy"
 readonly SHARED_REPO="https://raw.githubusercontent.com/jackyaz/shared-jy/master"
 readonly SHARED_WEB_DIR="$SCRIPT_PAGE_DIR/shared-jy"
+readonly CSV_OUTPUT_DIR="$SCRIPT_DIR/csv"
 [ -z "$(nvram get odmpid)" ] && ROUTER_MODEL=$(nvram get productid) || ROUTER_MODEL=$(nvram get odmpid)
 [ -f /opt/bin/sqlite3 ] && SQLITE3_PATH=/opt/bin/sqlite3 || SQLITE3_PATH=/usr/sbin/sqlite3
 ### End of script variables ###
@@ -198,6 +199,10 @@ Create_Dirs(){
 		mkdir -p "$SCRIPT_DIR"
 	fi
 	
+	if [ ! -d "$CSV_OUTPUT_DIR" ]; then
+		mkdir -p "$CSV_OUTPUT_DIR"
+	fi
+	
 	if [ ! -d "$SHARED_DIR" ]; then
 		mkdir -p "$SHARED_DIR"
 	fi
@@ -219,8 +224,8 @@ Create_Symlinks(){
 	rm -f "$SCRIPT_WEB_DIR/"* 2>/dev/null
 	
 	ln -s "$SCRIPT_DIR/modstatsdata.js" "$SCRIPT_WEB_DIR/modstatsdata.js" 2>/dev/null
-	
 	ln -s "$SCRIPT_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
+	ln -s "$CSV_OUTPUT_DIR" "$SCRIPT_WEB_DIR/csv" 2>/dev/null
 	
 	ln -s "$SHARED_DIR/chartjs-plugin-zoom.js" "$SHARED_WEB_DIR/chartjs-plugin-zoom.js" 2>/dev/null
 	ln -s "$SHARED_DIR/chartjs-plugin-annotation.js" "$SHARED_WEB_DIR/chartjs-plugin-annotation.js" 2>/dev/null
@@ -405,7 +410,7 @@ WriteSql_ToFile(){
 	rm -f "$6"
 	{
 		echo ".mode csv"
-		echo ".output $5.csv"
+		echo ".output $5.htm"
 	} >> "$6"
 	
 	channelcounter=1
@@ -432,13 +437,16 @@ Generate_Stats(){
 	timestamp="$(date '+%s')"
 	timetitle="$(date +"%c")"
 	shstatsfile="/tmp/shstats.csv"
+	
 	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 	
 	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 	
 	if [ "$(wc -l < /tmp/shstats.csv )" -gt 1 ]; then
-		echo "" > "$SCRIPT_DIR/modstatsdata.js"
+		rm -f "$SCRIPT_DIR/modstatsdata.js"
+		rm -f "$CSV_OUTPUT_DIR/"*
 		rm -f /tmp/modmon-stats.sql
+		
 		for metric in $metriclist; do
 		{
 			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] REAL NOT NULL);" >> /tmp/modmon-stats.sql
@@ -468,7 +476,7 @@ Generate_Stats(){
 			
 			{
 				echo ".mode csv"
-				echo ".output /tmp/modmon-""$metric""daily.csv"
+				echo ".output $CSV_OUTPUT_DIR/$metric""daily.htm"
 			} > /tmp/modmon-stats.sql
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
@@ -476,35 +484,21 @@ Generate_Stats(){
 				counter=$((counter + 1))
 			done
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			sed -i '1iChannelNum,Time,Value' "/tmp/modmon-""$metric""daily.csv"
+			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""daily.htm"
 			rm -f /tmp/modmon-stats.sql
 			
 			WriteSql_ToFile "Measurement" "modstats_$metric" 1 7 "/tmp/modmon-""$metric""weekly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			sed -i '1iChannelNum,Time,Value' "/tmp/modmon-""$metric""weekly.csv"
+			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""weekly.htm"
 			rm -f /tmp/modmon-stats.sql
 			
 			WriteSql_ToFile "Measurement" "modstats_$metric" 3 30 "/tmp/modmon-""$metric""monthly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			sed -i '1iChannelNum,Time,Value' "/tmp/modmon-""$metric""monthly.csv"
+			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""monthly.htm"
 			rm -f /tmp/modmon-stats.sql
 		}
 		done
 		
-		# for metric in $metriclist; do
-		# {
-		# 	channelcount="$(grep -c "$metric" $shstatsfile)"
-		#
-		# 	counter=1
-		# 	printf "var array%sdaily = [];var array%sweekly = [];var array%smonthly = [];\\n\\r" "$metric" "$metric" "$metric" >> "$SCRIPT_DIR/modstatsdata.js"
-		# 	until [ $counter -gt "$channelcount" ]; do
-		# 			WriteData_ToJS "array$metric""daily" "/tmp/modmon-""$metric""daily-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Daily""$counter"
-		# 			WriteData_ToJS "array$metric""weekly" "/tmp/modmon-""$metric""weekly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Weekly""$counter"
-		# 			WriteData_ToJS "array$metric""monthly" "/tmp/modmon-""$metric""monthly-$counter.csv" "$SCRIPT_DIR/modstatsdata.js" "Data""$metric""Monthly""$counter"
-		# 			counter=$((counter + 1))
-		# 		done
-		# }
-		# done
 		echo "Superhub stats retrieved on $timetitle" > "/tmp/modstatstitle.txt"
 		WriteStats_ToJS "/tmp/modstatstitle.txt" "$SCRIPT_DIR/modstatstext.js" "SetModStatsTitle" "statstitle"
 		Print_Output "false" "Superhub stats successfully retrieved" "$PASS"
@@ -513,7 +507,7 @@ Generate_Stats(){
 	fi
 	rm -f "/tmp/modmon-stats.sql"
 	rm -f "/tmp/modstatstitle.txt"
-	#rm -f "/tmp/modmon-"*".csv"
+	rm -f "/tmp/modmon-"*".csv"
 	rm -f "$shstatsfile"
 }
 
