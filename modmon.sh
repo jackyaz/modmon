@@ -416,10 +416,15 @@ WriteSql_ToFile(){
 		echo ".output $5$6.tmp"
 	} >> "$7"
 	
+	dividefactor=1
+	if echo "$2" | grep -qF "RxPwr" || echo "$2" | grep -qF "RxSnr" ; then
+		dividefactor=10
+	fi
+	
 	channelcounter=1
 	until [ $channelcounter -gt "$channelcount" ]; do
 		{
-			echo "SELECT 'Ch. ' || [ChannelNum],Min([Timestamp]) ChunkStart, IFNULL(Avg([Measurement]),'NaN') Value FROM"
+			echo "SELECT 'Ch. ' || [ChannelNum],Min([Timestamp]) ChunkStart, IFNULL(Avg([Measurement])/$dividefactor,'NaN') Value FROM"
 			echo "( SELECT NTILE($((24*$4/$3))) OVER (ORDER BY [Timestamp]) Chunk, * FROM $2 WHERE [Timestamp] >= ($timenow - ((60*60*$3)*$earliest)) AND [ChannelNum] = $channelcounter ) AS T"
 			echo "GROUP BY Chunk"
 			echo "ORDER BY ChunkStart;"
@@ -482,9 +487,15 @@ Generate_Stats(){
 				echo ".mode csv"
 				echo ".output $CSV_OUTPUT_DIR/$metric""daily.tmp"
 			} > /tmp/modmon-stats.sql
+			
+			dividefactor=1
+			if echo "$metric" | grep -qF "RxPwr" || echo "$metric" | grep -qF "RxSnr" ; then
+				dividefactor=10
+			fi
+			
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
-				echo "select 'Ch. ' || [ChannelNum],[Timestamp],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400) AND [ChannelNum] = $counter;" >> /tmp/modmon-stats.sql
+				echo "select 'Ch. ' || [ChannelNum],[Timestamp],[Measurement]/$dividefactor from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400) AND [ChannelNum] = $counter;" >> /tmp/modmon-stats.sql
 				counter=$((counter + 1))
 			done
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
