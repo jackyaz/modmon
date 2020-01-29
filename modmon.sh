@@ -488,16 +488,19 @@ Generate_Stats(){
 			done
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""daily.htm"
+			sed -i 's/^[^0-9]*//' "$CSV_OUTPUT_DIR/$metric""daily.htm"
 			rm -f /tmp/modmon-stats.sql
 			
-			WriteSql_ToFile "Measurement" "modstats_$metric" 2 7 "$CSV_OUTPUT_DIR/$metric""weekly" "/tmp/modmon-stats.sql" "$timestamp"
+			WriteSql_ToFile "Measurement" "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric""weekly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""weekly.htm"
+			sed -i 's/^[^0-9]*//' "$CSV_OUTPUT_DIR/$metric""weekly.htm"
 			rm -f /tmp/modmon-stats.sql
 			
-			WriteSql_ToFile "Measurement" "modstats_$metric" 6 30 "$CSV_OUTPUT_DIR/$metric""monthly" "/tmp/modmon-stats.sql" "$timestamp"
+			WriteSql_ToFile "Measurement" "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric""monthly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""monthly.htm"
+			sed -i 's/^[^0-9]*//' "$CSV_OUTPUT_DIR/$metric""monthly.htm"
 			rm -f /tmp/modmon-stats.sql
 		}
 		done
