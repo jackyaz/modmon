@@ -681,6 +681,9 @@ Menu_Install(){
 	Create_Dirs
 	Create_Symlinks
 	
+	opkg update
+	opkg install sqlite3-cli
+	
 	Update_File "chart.js"
 	Update_File "chartjs-plugin-zoom.js"
 	Update_File "chartjs-plugin-annotation.js"
