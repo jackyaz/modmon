@@ -426,7 +426,7 @@ WriteSql_ToFile(){
 		} >> "$7"
 		channelcounter=$((channelcounter + 1))
 	done
-	echo "var $metric$6-size = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
+	echo "var $metric$6""size = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
 }
 
 Generate_Stats(){
@@ -490,7 +490,7 @@ Generate_Stats(){
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""daily.tmp"
 			head -c -2 "$CSV_OUTPUT_DIR/$metric""daily.tmp" > "$CSV_OUTPUT_DIR/$metric""daily.htm"
-			echo "var $metric-dailysize = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
+			echo "var $metric""dailysize = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
 			rm -f "$CSV_OUTPUT_DIR/$metric""daily.tmp"
 			rm -f /tmp/modmon-stats.sql
 			
