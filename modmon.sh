@@ -420,7 +420,7 @@ WriteSql_ToFile(){
 	until [ $channelcounter -gt "$channelcount" ]; do
 		{
 			echo "SELECT $channelcounter,Min([Timestamp]) ChunkStart, IFNULL(Avg([Measurement]),'NaN') Value FROM"
-			echo "( SELECT NTILE($((24*$4/$3))) OVER (ORDER BY [Timestamp]) Chunk, * FROM $2 WHERE [ChannelNum] = $channelcounter ) AS T"
+			echo "( SELECT NTILE($((24*$4/$3))) OVER (ORDER BY [Timestamp]) Chunk, * FROM $2 WHERE [Timestamp] >= ($timenow - ((60*60*$3)*$earliest)) AND [ChannelNum] = $channelcounter ) AS T"
 			echo "GROUP BY Chunk"
 			echo "ORDER BY ChunkStart;"
 		} >> "$6"
