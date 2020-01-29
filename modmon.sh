@@ -413,7 +413,7 @@ WriteSql_ToFile(){
 	rm -f "$6"
 	{
 		echo ".mode csv"
-		echo ".output $5.htm"
+		echo ".output $5.tmp"
 	} >> "$6"
 	
 	channelcounter=1
@@ -479,7 +479,7 @@ Generate_Stats(){
 			
 			{
 				echo ".mode csv"
-				echo ".output $CSV_OUTPUT_DIR/$metric""daily.htm"
+				echo ".output $CSV_OUTPUT_DIR/$metric""daily.tmp"
 			} > /tmp/modmon-stats.sql
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
@@ -487,20 +487,23 @@ Generate_Stats(){
 				counter=$((counter + 1))
 			done
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""daily.htm"
-			sed -i 's/^[^0-9]*//' "$CSV_OUTPUT_DIR/$metric""daily.htm"
+			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""daily.tmp"
+			head -c -2 "$CSV_OUTPUT_DIR/$metric""daily.tmp" > "$CSV_OUTPUT_DIR/$metric""daily.htm"
+			rm -f "$CSV_OUTPUT_DIR/$metric""daily.tmp"
 			rm -f /tmp/modmon-stats.sql
 			
 			WriteSql_ToFile "Measurement" "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric""weekly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""weekly.htm"
-			sed -i 's/^[^0-9]*//' "$CSV_OUTPUT_DIR/$metric""weekly.htm"
+			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
+			head -c -2 "$CSV_OUTPUT_DIR/$metric""weekly.tmp" > "$CSV_OUTPUT_DIR/$metric""weekly.htm"
+			rm -f "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
 			rm -f /tmp/modmon-stats.sql
 			
 			WriteSql_ToFile "Measurement" "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric""monthly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""monthly.htm"
-			sed -i 's/^[^0-9]*//' "$CSV_OUTPUT_DIR/$metric""monthly.htm"
+			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
+			head -c -2 "$CSV_OUTPUT_DIR/$metric""monthly.tmp" > "$CSV_OUTPUT_DIR/$metric""monthly.htm"
+			rm -f "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
 			rm -f /tmp/modmon-stats.sql
 		}
 		done
