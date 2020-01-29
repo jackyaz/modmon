@@ -534,6 +534,14 @@ function reload() {
 	location.reload(true);
 }
 
+function ResetZoom(){
+	for(i = 0; i < metriclist.length; i++){
+		for (i2 = 0; i2 < chartlist.length; i2++) {
+			window["LineChart"+metriclist[i]+chartlist[i2]].resetZoom();
+		}
+	}
+}
+
 function applyRule() {
 	var action_script_tmp = "start_modmon";
 	document.form.action_script.value = action_script_tmp;
@@ -696,7 +704,7 @@ function AddEventHandlers(){
 <td style="background-color:rgb(77, 89, 93);border:0px;">
 <input type="button" onclick="applyRule();" value="Update stats now" class="button_gen" name="button">
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<input type="button" onclick="RedrawAllCharts();" value="Reset Zoom" class="button_gen" name="button">
+<input type="button" onclick="ResetZoom();" value="Reset Zoom" class="button_gen" name="button">
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <input type="button" onclick="ToggleLines();" value="Toggle Lines" class="button_gen" name="button">
 </td>
