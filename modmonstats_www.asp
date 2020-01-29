@@ -161,11 +161,10 @@ function Draw_Chart_NoData(txtchartname){
 
 function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 	var objchartname=window["LineChart"+txtchartname];
-	//var txtdataname="array"+txtchartname;
-	//var objdataname=objchartname.data.datasets;
-	//var objdataname=window["array"+txtchartname];
-	//if(typeof objdataname === 'undefined' || objdataname === null) { Draw_Chart_NoData(txtchartname); return; }
-	//if (objdataname.length == 0) { Draw_Chart_NoData(txtchartname); return; }
+	var txtdataname=txtchartname+"size";
+	var objdataname=window[txtdataname];
+	if(typeof objdataname === 'undefined' || objdataname === null) { Draw_Chart_NoData(txtchartname); return; }
+	if (objdataname == 0) { Draw_Chart_NoData(txtchartname); return; }
 	factor=0;
 	if (txtunitx=="hour"){
 		factor=60*60*1000;
@@ -346,7 +345,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 		}
 	};
 	var lineDataset = {
-		datasets: getDataSets2(txtchartname, txttitle)
+		datasets: getDataSets(txtchartname, txttitle)
 	};
 	objchartname = new Chart(ctx, {
 		type: 'line',
@@ -357,29 +356,14 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 	window["LineChart"+txtchartname]=objchartname;
 }
 
-function getDataSets2(txtarrayname,txttitle) {
+function getDataSets(txtchartname,txttitle) {
 	var datasets = [];
 	colourname="#fc8500";
-
-	for(var i = 0; i < 24; i++) {
-		if(txtarrayname.indexOf("Rx") != -1){
-			colourname=RxColours[i];
-		}
-		else {
-			colourname=TxColours[i];
-		}
-		datasets.push({ label: "Ch. " + (i+1).toString(), borderWidth: 1, pointRadius: 1, lineTension: 0, fill: false, backgroundColor: colourname, borderColor: colourname});
-	}
-	return datasets;
-}
-
-function getDataSets(txtarrayname,txttitle) {
-	var datasets = [];
-	var array = window[txtchartname].data.datasets;
-	colourname="#fc8500";
-
-	for(var i = 0; i < arrayname.length; i++) {
-		if(txtarrayname.indexOf("Rx") != -1){
+	var txtdataname=txtchartname+"size";
+	var objdataname=window[txtdataname];
+	
+	for(var i = 0; i < objdataname; i++) {
+		if(txtchartname.indexOf("Rx") != -1){
 			colourname=RxColours[i];
 		}
 		else {
@@ -486,21 +470,18 @@ function ToggleLines() {
 function SetRxTxColours(){
 	for(i = 0; i < metriclist.length; i++){
 		for (i2 = 0; i2 < chartlist.length; i2++) {
-			arrayname="array"+metriclist[i]+chartlist[i2];
-			var objdataname=window[arrayname];
-			if(typeof objdataname === 'undefined' || objdataname === null) { continue; }
-			if(arrayname.indexOf("Rx") != -1){
-				RxColourCount.push(objdataname.length);
+			varname=metriclist[i]+chartlist[i2]+"size";
+			var objdataname=window[varname];
+			if(varname.indexOf("Rx") != -1){
+				RxColourCount.push(objdataname);
 			}
 			else {
-				TxColourCount.push(objdataname.length);
+				TxColourCount.push(objdataname);
 			}
 		}
 	}
-	//RxColours = poolColors(Array.max(RxColourCount));
-	//TxColours = poolColors(Array.max(TxColourCount));
-	RxColours = poolColors(24);
-	TxColours = poolColors(4);
+	RxColours = poolColors(Array.max(RxColourCount));
+	TxColours = poolColors(Array.max(TxColourCount));
 }
 
 function RedrawAllCharts() {
