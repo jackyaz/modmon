@@ -400,21 +400,21 @@ WriteStats_ToJS(){
 	printf "%s\\r\\n}\\r\\n" "$html" >> "$2"
 }
 
-#$1 fieldname $2 tablename $3 frequency (hours) $4 length (days) $5 outputfile $6 sqlfile $7 timestamp
+#$1 fieldname $2 tablename $3 frequency (hours) $4 length (days) $5 outputfile $6 outputfrequency $7 sqlfile $8 timestamp
 WriteSql_ToFile(){
-	timenow="$7"
+	timenow="$8"
 	earliest="$((24*$4/$3))"
 	{
 		echo ".mode list"
 		echo "select count(distinct ChannelNum) from modstats_$metric WHERE [Timestamp] >= ($timenow - ((60*60*$3)*$earliest));"
-	} > "$6"
+	} > "$7"
 	
-	channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < "$6")"
-	rm -f "$6"
+	channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < "$7")"
+	rm -f "$7"
 	{
 		echo ".mode csv"
-		echo ".output $5.tmp"
-	} >> "$6"
+		echo ".output $5$6.tmp"
+	} >> "$7"
 	
 	channelcounter=1
 	until [ $channelcounter -gt "$channelcount" ]; do
@@ -423,9 +423,10 @@ WriteSql_ToFile(){
 			echo "( SELECT NTILE($((24*$4/$3))) OVER (ORDER BY [Timestamp]) Chunk, * FROM $2 WHERE [Timestamp] >= ($timenow - ((60*60*$3)*$earliest)) AND [ChannelNum] = $channelcounter ) AS T"
 			echo "GROUP BY Chunk"
 			echo "ORDER BY ChunkStart;"
-		} >> "$6"
+		} >> "$7"
 		channelcounter=$((channelcounter + 1))
 	done
+	echo "var $metric$6-size = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
 }
 
 Generate_Stats(){
@@ -489,17 +490,18 @@ Generate_Stats(){
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""daily.tmp"
 			head -c -2 "$CSV_OUTPUT_DIR/$metric""daily.tmp" > "$CSV_OUTPUT_DIR/$metric""daily.htm"
+			echo "var $metric-dailysize = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
 			rm -f "$CSV_OUTPUT_DIR/$metric""daily.tmp"
 			rm -f /tmp/modmon-stats.sql
 			
-			WriteSql_ToFile "Measurement" "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric""weekly" "/tmp/modmon-stats.sql" "$timestamp"
+			WriteSql_ToFile "Measurement" "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric" "weekly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
 			head -c -2 "$CSV_OUTPUT_DIR/$metric""weekly.tmp" > "$CSV_OUTPUT_DIR/$metric""weekly.htm"
 			rm -f "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
 			rm -f /tmp/modmon-stats.sql
 			
-			WriteSql_ToFile "Measurement" "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric""monthly" "/tmp/modmon-stats.sql" "$timestamp"
+			WriteSql_ToFile "Measurement" "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric" "monthly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
 			head -c -2 "$CSV_OUTPUT_DIR/$metric""monthly.tmp" > "$CSV_OUTPUT_DIR/$metric""monthly.htm"
