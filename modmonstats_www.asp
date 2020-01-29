@@ -183,7 +183,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 		animation: {
 			duration: 0 // general animation time
 		},
-		responsiveAnimationDuration: 0 // animation duration after a resize
+		responsiveAnimationDuration: 0, // animation duration after a resize
 		maintainAspectRatio: false,
 		animateScale : true,
 		hover: { mode: "point" },
