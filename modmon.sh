@@ -419,7 +419,7 @@ WriteSql_ToFile(){
 	channelcounter=1
 	until [ $channelcounter -gt "$channelcount" ]; do
 		{
-			echo "SELECT $channelcounter,Min([Timestamp]) ChunkStart, IFNULL(Avg([Measurement]),'NaN') Value FROM"
+			echo "SELECT 'Ch. ' || [ChannelNum],Min([Timestamp]) ChunkStart, IFNULL(Avg([Measurement]),'NaN') Value FROM"
 			echo "( SELECT NTILE($((24*$4/$3))) OVER (ORDER BY [Timestamp]) Chunk, * FROM $2 WHERE [Timestamp] >= ($timenow - ((60*60*$3)*$earliest)) AND [ChannelNum] = $channelcounter ) AS T"
 			echo "GROUP BY Chunk"
 			echo "ORDER BY ChunkStart;"
@@ -484,7 +484,7 @@ Generate_Stats(){
 			} > /tmp/modmon-stats.sql
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
-				echo "select [ChannelNum],[Timestamp],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400) AND [ChannelNum] = $counter;" >> /tmp/modmon-stats.sql
+				echo "select 'Ch. ' || [ChannelNum],[Timestamp],[Measurement] from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400) AND [ChannelNum] = $counter;" >> /tmp/modmon-stats.sql
 				counter=$((counter + 1))
 			done
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
