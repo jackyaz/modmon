@@ -232,11 +232,11 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					mode: 'xy',
 					rangeMin: {
 						x: new Date().getTime() - (factor * numunitx),
-						//y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
+						y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
 					},
 					rangeMax: {
 						x: new Date().getTime(),
-						//y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
+						y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
 					},
 				},
 				zoom: {
@@ -244,11 +244,11 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					mode: 'xy',
 					rangeMin: {
 						x: new Date().getTime() - (factor * numunitx),
-						//y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
+						y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
 					},
 					rangeMax: {
 						x: new Date().getTime(),
-						//y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
+						y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
 					},
 					speed: 0.1
 				},
@@ -297,7 +297,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				//value: getLimit(txtdataname,"y","max"),
+				value: getLimit(txtdataname,"y","max"),
 				borderColor: "#fc8500",
 				borderWidth: 1,
 				borderDash: [5, 5],
@@ -314,7 +314,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					//content: "Max=" + round(getLimit(txtdataname,"y","max"),3).toFixed(3)+txtunity,
+					content: "Max=" + round(getLimit(txtdataname,"y","max"),3).toFixed(3)+txtunity,
 				}
 			},
 			{
@@ -322,7 +322,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				//value: getLimit(txtdataname,"y","min"),
+				value: getLimit(txtdataname,"y","min"),
 				borderColor: "#fc8500",
 				borderWidth: 1,
 				borderDash: [5, 5],
@@ -339,7 +339,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					//content: "Min=" + round(getLimit(txtdataname,"y","min"),3).toFixed(3)+txtunity,
+					content: "Min=" + round(getLimit(txtdataname,"y","min"),3).toFixed(3)+txtunity,
 				}
 			}]
 		}
@@ -375,41 +375,10 @@ function getDataSets(txtchartname,txttitle) {
 }
 
 function getLimit(datasetname,axis,maxmin) {
-	limit = 0;
-	var limits = [];
-	var objdataname = window[datasetname];
-	for(var i = 0; i < objdataname.length; i++) {
-		limits.push(getDataSetLimit(objdataname[i],axis,maxmin));
-	}
-	limit = getDataLimit(limits,maxmin);
-	return limit;
-}
-
-function getDataLimit(dataset,maxmin) {
-	limit=0;
-	if(maxmin == "max") {
-		limit = Array.max(dataset);
-	} else {
-		limit = Array.min(dataset);
-	}
-	return limit;
-}
-
-function getDataSetLimit(dataset,axis,maxmin) {
-	limit=0;
-	if(maxmin == "max") {
-		if(axis == "x") {
-			limit=Math.max.apply(Math, dataset.map(function(o) { return o.x;} ))
-		} else {
-			limit=Math.max.apply(Math, dataset.map(function(o) { return o.y;} ))
-		}
-	} else {
-		if(axis == "x") {
-			limit=Math.min.apply(Math, dataset.map(function(o) { return o.x;} ))
-		} else {
-			limit=Math.min.apply(Math, dataset.map(function(o) { return o.y;} ))
-		}
-	}
+	var limit = 0;
+	var objdataname=window[datasetname+maxmin];
+	if(typeof objdataname === 'undefined' || objdataname === null) { limit = 0; }
+	else {limit = objdataname;}
 	return limit;
 }
 

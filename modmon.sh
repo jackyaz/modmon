@@ -411,6 +411,7 @@ WriteSql_ToFile(){
 	
 	channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < "$7")"
 	rm -f "$7"
+	
 	{
 		echo ".mode csv"
 		echo ".output $5$6.tmp"
@@ -501,14 +502,28 @@ Generate_Stats(){
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""daily.tmp"
 			head -c -2 "$CSV_OUTPUT_DIR/$metric""daily.tmp" > "$CSV_OUTPUT_DIR/$metric""daily.htm"
+			dos2unix "$CSV_OUTPUT_DIR/$metric""daily.htm"
+			cp "$CSV_OUTPUT_DIR/$metric""daily.htm" "$CSV_OUTPUT_DIR/$metric""daily.tmp"
+			sed -i '1d' "$CSV_OUTPUT_DIR/$metric""daily.tmp"
+			min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""daily.tmp" | sort -n | head -1)"
+			max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""daily.tmp" | sort -n | tail -1)"
 			echo "var $metric""dailysize = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
-			rm -f "$CSV_OUTPUT_DIR/$metric""daily.tmp"
+			echo "var $metric""dailymin = $min;" >> "$SCRIPT_DIR/modstatsdata.js"
+			echo "var $metric""dailymax = $max;" >> "$SCRIPT_DIR/modstatsdata.js"
+			rm -f "$CSV_OUTPUT_DIR/$metric""daily.tmp"*
 			rm -f /tmp/modmon-stats.sql
 			
 			WriteSql_ToFile "Measurement" "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric" "weekly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
 			head -c -2 "$CSV_OUTPUT_DIR/$metric""weekly.tmp" > "$CSV_OUTPUT_DIR/$metric""weekly.htm"
+			dos2unix "$CSV_OUTPUT_DIR/$metric""weekly.htm"
+			cp "$CSV_OUTPUT_DIR/$metric""weekly.htm" "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
+			sed -i '1d' "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
+			min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""weekly.tmp" | sort -n | head -1)"
+			max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""weekly.tmp" | sort -n | tail -1)"
+			echo "var $metric""weeklymin = $min;" >> "$SCRIPT_DIR/modstatsdata.js"
+			echo "var $metric""weeklymax = $max;" >> "$SCRIPT_DIR/modstatsdata.js"
 			rm -f "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
 			rm -f /tmp/modmon-stats.sql
 			
@@ -516,6 +531,13 @@ Generate_Stats(){
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
 			head -c -2 "$CSV_OUTPUT_DIR/$metric""monthly.tmp" > "$CSV_OUTPUT_DIR/$metric""monthly.htm"
+			dos2unix "$CSV_OUTPUT_DIR/$metric""monthly.htm"
+			cp "$CSV_OUTPUT_DIR/$metric""monthly.htm" "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
+			sed -i '1d' "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
+			min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""monthly.tmp" | sort -n | head -1)"
+			max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""monthly.tmp" | sort -n | tail -1)"
+			echo "var $metric""monthlymin = $min;" >> "$SCRIPT_DIR/modstatsdata.js"
+			echo "var $metric""monthlymax = $max;" >> "$SCRIPT_DIR/modstatsdata.js"
 			rm -f "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
 			rm -f /tmp/modmon-stats.sql
 		}
