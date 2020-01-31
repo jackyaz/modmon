@@ -160,7 +160,8 @@ var datafilterPlugin = {
 		filterData(chartInstance)
 	}
 }
-
+</script>
+<script>
 var ShowLines=GetCookie("ShowLines");
 
 var metriclist = ["RxPwr","RxSnr","RxPstRs","TxPwr","TxT3Out","TxT4Out"];
