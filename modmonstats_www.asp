@@ -263,6 +263,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 				scaleLabel: { display: false, labelString: txttitle },
 				ticks: {
 					display: true,
+					max: getLimit(txtchartname,"y","max") + getLimit(txtchartname,"y","max")*0.1,
 					callback: function (value, index, values) {
 						return round(value,3).toFixed(3) + ' ' + txtunity;
 					}
@@ -312,7 +313,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 		annotation: {
 			drawTime: 'afterDatasetsDraw',
 			annotations: [{
-				id: 'avgline',
+				//id: 'avgline',
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
@@ -337,7 +338,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 				}
 			},
 			{
-				id: 'maxline',
+				//id: 'maxline',
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
@@ -362,7 +363,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 				}
 			},
 			{
-				id: 'minline',
+				//id: 'minline',
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
@@ -476,7 +477,14 @@ function ToggleLines() {
 		ShowLines = "";
 		SetCookie("ShowLines","")
 	}
-	RedrawAllCharts();
+	for(i = 0; i < metriclist.length; i++){
+		for (i2 = 0; i2 < chartlist.length; i2++) {
+			for (i3 = 0; i3 < 3; i3++) {
+				window["LineChart"+metriclist[i]+chartlist[i2]].options.annotation.annotations[i3].type=ShowLines;
+			}
+			window["LineChart"+metriclist[i]+chartlist[i2]].update();
+		}
+	}
 }
 
 function SetRxTxColours(){
