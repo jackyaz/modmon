@@ -161,8 +161,7 @@ function Draw_Chart_NoData(txtchartname){
 
 function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 	var objchartname=window["LineChart"+txtchartname];
-	var txtdataname=txtchartname+"size";
-	var objdataname=window[txtdataname];
+	var objdataname=window[txtchartname+"size"];
 	if(typeof objdataname === 'undefined' || objdataname === null) { Draw_Chart_NoData(txtchartname); return; }
 	if (objdataname == 0) { Draw_Chart_NoData(txtchartname); return; }
 	factor=0;
@@ -232,11 +231,11 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					mode: 'xy',
 					rangeMin: {
 						x: new Date().getTime() - (factor * numunitx),
-						y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
+						y: getLimit(txtchartname,"y","min") - Math.sqrt(Math.pow(getLimit(txtchartname,"y","min"),2))*0.1,
 					},
 					rangeMax: {
 						x: new Date().getTime(),
-						y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
+						y: getLimit(txtchartname,"y","max") + getLimit(txtchartname,"y","max")*0.1,
 					},
 				},
 				zoom: {
@@ -244,11 +243,11 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					mode: 'xy',
 					rangeMin: {
 						x: new Date().getTime() - (factor * numunitx),
-						y: getLimit(txtdataname,"y","min") - Math.sqrt(Math.pow(getLimit(txtdataname,"y","min"),2))*0.1,
+						y: getLimit(txtchartname,"y","min") - Math.sqrt(Math.pow(getLimit(txtchartname,"y","min"),2))*0.1,
 					},
 					rangeMax: {
 						x: new Date().getTime(),
-						y: getLimit(txtdataname,"y","max") + getLimit(txtdataname,"y","max")*0.1,
+						y: getLimit(txtchartname,"y","max") + getLimit(txtchartname,"y","max")*0.1,
 					},
 					speed: 0.1
 				},
@@ -297,7 +296,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				value: getLimit(txtdataname,"y","max"),
+				value: getLimit(txtchartname,"y","max"),
 				borderColor: "#fc8500",
 				borderWidth: 1,
 				borderDash: [5, 5],
@@ -314,7 +313,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					content: "Max=" + round(getLimit(txtdataname,"y","max"),3).toFixed(3)+txtunity,
+					content: "Max=" + round(getLimit(txtchartname,"y","max"),3).toFixed(3)+txtunity,
 				}
 			},
 			{
@@ -322,7 +321,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				value: getLimit(txtdataname,"y","min"),
+				value: getLimit(txtchartname,"y","min"),
 				borderColor: "#fc8500",
 				borderWidth: 1,
 				borderDash: [5, 5],
@@ -339,7 +338,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					content: "Min=" + round(getLimit(txtdataname,"y","min"),3).toFixed(3)+txtunity,
+					content: "Min=" + round(getLimit(txtchartname,"y","min"),3).toFixed(3)+txtunity,
 				}
 			}]
 		}
@@ -359,8 +358,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 function getDataSets(txtchartname,txttitle) {
 	var datasets = [];
 	colourname="#fc8500";
-	var txtdataname=txtchartname+"size";
-	var objdataname=window[txtdataname];
+	var objdataname=window[txtchartname+"size"];
 	
 	for(var i = 0; i < objdataname; i++) {
 		if(txtchartname.indexOf("Rx") != -1){
