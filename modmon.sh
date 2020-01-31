@@ -507,9 +507,11 @@ Generate_Stats(){
 			sed -i '1d' "$CSV_OUTPUT_DIR/$metric""daily.tmp"
 			min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""daily.tmp" | sort -n | head -1)"
 			max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""daily.tmp" | sort -n | tail -1)"
-			echo "var $metric""dailysize = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
-			echo "var $metric""dailymin = $min;" >> "$SCRIPT_DIR/modstatsdata.js"
-			echo "var $metric""dailymax = $max;" >> "$SCRIPT_DIR/modstatsdata.js"
+			{
+			echo "var $metric""dailysize = $channelcount;"
+			echo "var $metric""dailymin = $min;"
+			echo "var $metric""dailymax = $max;"
+			} >> "$SCRIPT_DIR/modstatsdata.js"
 			rm -f "$CSV_OUTPUT_DIR/$metric""daily.tmp"*
 			rm -f /tmp/modmon-stats.sql
 			
@@ -522,8 +524,10 @@ Generate_Stats(){
 			sed -i '1d' "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
 			min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""weekly.tmp" | sort -n | head -1)"
 			max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""weekly.tmp" | sort -n | tail -1)"
-			echo "var $metric""weeklymin = $min;" >> "$SCRIPT_DIR/modstatsdata.js"
-			echo "var $metric""weeklymax = $max;" >> "$SCRIPT_DIR/modstatsdata.js"
+			{
+			echo "var $metric""weeklymin = $min;"
+			echo "var $metric""weeklymax = $max;"
+			} >> "$SCRIPT_DIR/modstatsdata.js"
 			rm -f "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
 			rm -f /tmp/modmon-stats.sql
 			
@@ -536,8 +540,10 @@ Generate_Stats(){
 			sed -i '1d' "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
 			min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""monthly.tmp" | sort -n | head -1)"
 			max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""monthly.tmp" | sort -n | tail -1)"
-			echo "var $metric""monthlymin = $min;" >> "$SCRIPT_DIR/modstatsdata.js"
-			echo "var $metric""monthlymax = $max;" >> "$SCRIPT_DIR/modstatsdata.js"
+			{
+			echo "var $metric""monthlymin = $min;"
+			echo "var $metric""monthlymax = $max;"
+			} >> "$SCRIPT_DIR/modstatsdata.js"
 			rm -f "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
 			rm -f /tmp/modmon-stats.sql
 		}
