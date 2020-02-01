@@ -224,6 +224,7 @@ Create_Dirs(){
 
 Create_Symlinks(){
 	rm -f "$SCRIPT_WEB_DIR/"* 2>/dev/null
+	rm -f "$SHARED_WEB_DIR/"* 2>/dev/null
 	
 	ln -s "$SCRIPT_DIR/modstatsdata.js" "$SCRIPT_WEB_DIR/modstatsdata.js" 2>/dev/null
 	ln -s "$SCRIPT_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
