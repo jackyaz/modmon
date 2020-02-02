@@ -696,7 +696,7 @@ function BuildChannelFilterRow(rxtx,title,channelcount){
 	channelhtml+='<col style="width:60px;">';
 	channelhtml+='<tr>';
 	for (channelno = 1; channelno < channelcount+1; channelno++) {
-		channelhtml+='<td class="channelcell"><label class="radio"><input type="checkbox" name="'+rxtx+'opt'+channelno+'"/>Ch. '+channelno+'</label></td>';
+		channelhtml+='<td class="channelcell"><label class="radio"><input type="checkbox" onchange="ToggleDataset(this);" name="'+rxtx+'opt'+channelno+'" id="'+rxtx+'opt'+channelno+'" checked/>Ch. '+channelno+'</label></td>';
 		if(channelno % 12 == 0){
 			channelhtml+='</tr><tr>';
 		}
@@ -708,12 +708,44 @@ function BuildChannelFilterRow(rxtx,title,channelcount){
 	channelhtml+='</tr>';
 	channelhtml+='<tr class="apply_gen" valign="top" height="35px" id="row_'+rxtx+'_buttons">';
 	channelhtml+='<td>';
-	channelhtml+='<input type="button" onclick="" value="Select all" class="button_gen" name="button_clear_'+rxtx+'" id="button_select_'+rxtx+'">';
+	channelhtml+='<input type="button" onclick="SetAllChannels(this,true);" value="Select all" class="button_gen" name="'+rxtx+'_button_select" id="'+rxtx+'_button_select">';
 	channelhtml+='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-	channelhtml+='<input type="button" onclick="" value="Clear all" class="button_gen" name="button_clear_'+rxtx+'" id="button_clear_'+rxtx+'">';
+	channelhtml+='<input type="button" onclick="SetAllChannels(this,false);" value="Clear all" class="button_gen" name="'+rxtx+'_button_clear" id="'+rxtx+'_button_clear">';
 	channelhtml+='</td></tr>';
 	channelhtml+='</table>';
 	return channelhtml;
+}
+
+function ToggleDataset(checkbox){
+	for(i = 0; i < metriclist.length; i++){
+		for (i2 = 0; i2 < chartlist.length; i2++) {
+			if(metriclist[i].toLowerCase().indexOf(checkbox.id.substring(0,2)) != -1){
+				window["LineChart"+metriclist[i]+chartlist[i2]].getDatasetMeta((checkbox.id.substring(5)*1)-1).hidden = ! checkbox.checked;
+				window["LineChart"+metriclist[i]+chartlist[i2]].update();
+			}
+		}
+	}
+}
+
+function SetAllChannels(button,setclear){
+	var rxtx = "";
+	var startindex = 0;
+	if(setclear == false){startindex=1;}
+	if(button.id.substring(0,2) == "rx"){rxtx="Rx";}
+	else{rxtx="Tx";}
+	for(i = 1 + startindex; i < window[rxtx+"Count"]+1; i++){
+		$( "#"+rxtx.toLowerCase()+"opt"+i ).prop("checked",setclear);
+	}
+	for(i = 0; i < metriclist.length; i++){
+		for (i2 = 0; i2 < chartlist.length; i2++) {
+			if(metriclist[i].indexOf(rxtx) != -1){
+				for(i3 = 0 + startindex; i3 < window[rxtx+"Count"]; i3++){
+					window["LineChart"+metriclist[i]+chartlist[i2]].getDatasetMeta(i3).hidden = ! setclear;
+				}
+				window["LineChart"+metriclist[i]+chartlist[i2]].update();
+			}
+		}
+	}
 }
 
 function AddEventHandlers(){
