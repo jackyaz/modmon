@@ -264,7 +264,8 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 				scaleLabel: { display: false, labelString: txttitle },
 				ticks: {
 					display: true,
-					max: getLimit(txtchartname,"y","max") + getLimit(txtchartname,"y","max")*0.1,
+					beginAtZero: startAtZero(txtchartname),
+					max: getLimit(txtchartname,"y","max",false) + getLimit(txtchartname,"y","max",false)*0.1,
 					callback: function (value, index, values) {
 						return round(value,3).toFixed(3) + ' ' + txtunity;
 					}
@@ -278,11 +279,11 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					mode: 'xy',
 					rangeMin: {
 						x: new Date().getTime() - (factor * numunitx),
-						y: getLimit(txtchartname,"y","min") - Math.sqrt(Math.pow(getLimit(txtchartname,"y","min"),2))*0.1,
+						y: getLimit(txtchartname,"y","min",false) - Math.sqrt(Math.pow(getLimit(txtchartname,"y","min",false),2))*0.1,
 					},
 					rangeMax: {
 						x: new Date().getTime(),
-						y: getLimit(txtchartname,"y","max") + getLimit(txtchartname,"y","max")*0.1,
+						y: getLimit(txtchartname,"y","max",false) + getLimit(txtchartname,"y","max",false)*0.1,
 					},
 				},
 				zoom: {
@@ -290,11 +291,11 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					mode: 'xy',
 					rangeMin: {
 						x: new Date().getTime() - (factor * numunitx),
-						y: getLimit(txtchartname,"y","min") - Math.sqrt(Math.pow(getLimit(txtchartname,"y","min"),2))*0.1,
+						y: getLimit(txtchartname,"y","min",false) - Math.sqrt(Math.pow(getLimit(txtchartname,"y","min",false),2))*0.1,
 					},
 					rangeMax: {
 						x: new Date().getTime(),
-						y: getLimit(txtchartname,"y","max") + getLimit(txtchartname,"y","max")*0.1,
+						y: getLimit(txtchartname,"y","max",false) + getLimit(txtchartname,"y","max",false)*0.1,
 					},
 					speed: 0.1
 				},
@@ -343,7 +344,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				value: getLimit(txtchartname,"y","max"),
+				value: getLimit(txtchartname,"y","max",true),
 				borderColor: "#fc8500",
 				borderWidth: 1,
 				borderDash: [5, 5],
@@ -360,7 +361,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					content: "Max=" + round(getLimit(txtchartname,"y","max"),3).toFixed(3)+txtunity,
+					content: "Max=" + round(getLimit(txtchartname,"y","max",true),3).toFixed(3)+txtunity,
 				}
 			},
 			{
@@ -368,7 +369,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				value: getLimit(txtchartname,"y","min"),
+				value: getLimit(txtchartname,"y","min",true),
 				borderColor: "#fc8500",
 				borderWidth: 1,
 				borderDash: [5, 5],
@@ -385,7 +386,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					content: "Min=" + round(getLimit(txtchartname,"y","min"),3).toFixed(3)+txtunity,
+					content: "Min=" + round(getLimit(txtchartname,"y","min",true),3).toFixed(3)+txtunity,
 				}
 			}]
 		}
@@ -419,35 +420,31 @@ function getDataSets(txtchartname,txttitle) {
 	return datasets;
 }
 
-function getLimit(datasetname,axis,maxmin) {
+function getLimit(datasetname,axis,maxmin,isannotation) {
 	var limit = 0;
 	var objdataname=window[datasetname+maxmin];
 	if(typeof objdataname === 'undefined' || objdataname === null) { limit = 0; }
 	else {limit = objdataname;}
+	if(maxmin == "max" && limit == 0 && isannotation == false){
+		limit = 1;
+	}
 	return limit;
 }
 
 function getAverage(datasetname) {
-	var total = 0;
-	var totals = [];
-	for(var i = 0; i < datasetname.length; i++) {
-		totals.push(getDatasetAverage(datasetname[i]));
-	}
-	
-	for(var i = 0; i < totals.length; i++) {
-		total += totals[i];
-	}
-	var avg = total / totals.length;
+	var avg = 0;
+	var objdataname=window[datasetname+"avg"];
+	if(typeof objdataname === 'undefined' || objdataname === null) { avg = 0; }
+	else {avg = objdataname;}
 	return avg;
 }
 
-function getDatasetAverage(datasetname) {
-	var total = 0;
-	for(var i = 0; i < datasetname.length; i++) {
-		total += datasetname[i].y;
+function startAtZero(datasetname) {
+	var starty = false;
+	if(datasetname.indexOf("PstRS") != -1 || datasetname.indexOf("T3Out") != -1 || datasetname.indexOf("T4Out") != -1){
+		starty = true;
 	}
-	var avg = total / datasetname.length;
-	return avg;
+	return starty;
 }
 
 function round(value, decimals) {
