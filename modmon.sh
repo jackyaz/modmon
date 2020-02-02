@@ -436,6 +436,22 @@ WriteSql_ToFile(){
 	echo "var $metric$6""size = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
 }
 
+Aggregate_Stats(){
+	metricname="$1"
+	period="$2"
+	sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metricname$period.tmp"
+	head -c -2 "$CSV_OUTPUT_DIR/$metricname$period.tmp" > "$CSV_OUTPUT_DIR/$metricname$period.htm"
+	dos2unix "$CSV_OUTPUT_DIR/$metricname$period.htm"
+	cp "$CSV_OUTPUT_DIR/$metricname$period.htm" "$CSV_OUTPUT_DIR/$metricname$period.tmp"
+	sed -i '1d' "$CSV_OUTPUT_DIR/$metricname$period.tmp"
+	min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metricname$period.tmp" | sort -n | head -1)"
+	max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metricname$period.tmp" | sort -n | tail -1)"
+	{
+	echo "var $metricname$period""min = $min;"
+	echo "var $metricname$period""max = $max;"
+	} >> "$SCRIPT_DIR/modstatsdata.js"
+}
+
 Generate_Stats(){
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
@@ -501,50 +517,22 @@ Generate_Stats(){
 				counter=$((counter + 1))
 			done
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""daily.tmp"
-			head -c -2 "$CSV_OUTPUT_DIR/$metric""daily.tmp" > "$CSV_OUTPUT_DIR/$metric""daily.htm"
-			dos2unix "$CSV_OUTPUT_DIR/$metric""daily.htm"
-			cp "$CSV_OUTPUT_DIR/$metric""daily.htm" "$CSV_OUTPUT_DIR/$metric""daily.tmp"
-			sed -i '1d' "$CSV_OUTPUT_DIR/$metric""daily.tmp"
-			min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""daily.tmp" | sort -n | head -1)"
-			max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""daily.tmp" | sort -n | tail -1)"
 			{
 			echo "var $metric""dailysize = $channelcount;"
-			echo "var $metric""dailymin = $min;"
-			echo "var $metric""dailymax = $max;"
 			} >> "$SCRIPT_DIR/modstatsdata.js"
+			Aggregate_Stats "$metric" "daily"
 			rm -f "$CSV_OUTPUT_DIR/$metric""daily.tmp"*
 			rm -f /tmp/modmon-stats.sql
 			
 			WriteSql_ToFile "Measurement" "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric" "weekly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
-			head -c -2 "$CSV_OUTPUT_DIR/$metric""weekly.tmp" > "$CSV_OUTPUT_DIR/$metric""weekly.htm"
-			dos2unix "$CSV_OUTPUT_DIR/$metric""weekly.htm"
-			cp "$CSV_OUTPUT_DIR/$metric""weekly.htm" "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
-			sed -i '1d' "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
-			min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""weekly.tmp" | sort -n | head -1)"
-			max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""weekly.tmp" | sort -n | tail -1)"
-			{
-			echo "var $metric""weeklymin = $min;"
-			echo "var $metric""weeklymax = $max;"
-			} >> "$SCRIPT_DIR/modstatsdata.js"
+			Aggregate_Stats "$metric" "weekly"
 			rm -f "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
 			rm -f /tmp/modmon-stats.sql
 			
 			WriteSql_ToFile "Measurement" "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric" "monthly" "/tmp/modmon-stats.sql" "$timestamp"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
-			head -c -2 "$CSV_OUTPUT_DIR/$metric""monthly.tmp" > "$CSV_OUTPUT_DIR/$metric""monthly.htm"
-			dos2unix "$CSV_OUTPUT_DIR/$metric""monthly.htm"
-			cp "$CSV_OUTPUT_DIR/$metric""monthly.htm" "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
-			sed -i '1d' "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
-			min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""monthly.tmp" | sort -n | head -1)"
-			max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metric""monthly.tmp" | sort -n | tail -1)"
-			{
-			echo "var $metric""monthlymin = $min;"
-			echo "var $metric""monthlymax = $max;"
-			} >> "$SCRIPT_DIR/modstatsdata.js"
+			Aggregate_Stats "$metric" "monthly"
 			rm -f "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
 			rm -f /tmp/modmon-stats.sql
 		}
