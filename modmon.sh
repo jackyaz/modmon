@@ -45,11 +45,21 @@ Print_Output(){
 	fi
 }
 
-### Code for this function courtesy of https://github.com/decoderman- credit to @thelonelycoder ###
 Firmware_Version_Check(){
-	echo "$1" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'
+	if [ "$1" = "install" ]; then
+		if [ "$(uname -o)" = "ASUSWRT-Merlin" ] && [ "$(nvram get buildno | tr -d '.')" -ge "38415" ]; then
+			return 0
+		else
+			return 1
+		fi
+	elif [ "$1" = "webui" ]; then
+		if nvram get rc_support | grep -qF "am_addons"; then
+			return 0
+		else
+			return 1
+		fi
+	fi
 }
-############################################################################
 
 ### Code for these functions inspired by https://github.com/Adamm00 - credit to @Adamm ###
 Check_Lock(){
@@ -353,10 +363,7 @@ Mount_WebUI(){
 		mount -o bind "$SCRIPT_DIR/modmonstats_www.asp" "/www/UUAccelerator.asp"
 	fi
 	
-	# if [ ! -f "$SCRIPT_DIR/modmonstats_www.asp" ]; then
-	# 	Download_File "$SCRIPT_REPO/modmonstats_www.asp" "$SCRIPT_DIR/modmonstats_www.asp"
-	# fi
-	# MyPage="$(Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp")"
+	# Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp"
 	# if [ "$MyPage" = "none" ]; then
 	# 	Print_Output "true" "Unable to mount $SCRIPT_NAME WebUI page, exiting" "$CRIT"
 	# 	exit 1
@@ -686,16 +693,17 @@ Check_Requirements(){
 	if [ ! -f "/opt/bin/opkg" ]; then
 		Print_Output "true" "Entware not detected!" "$ERR"
 		CHECKSFAILED="true"
-		return 1
 	fi
 	
-	if ! nvram get rc_support | grep -qF "am_addons" ; then
+	if Firmware_Version_Check "install" ; then
 		Print_Output "true" "Older Merlin firmware detected - $SCRIPT_NAME requires 384.15 or later" "$ERR"
 		CHECKSFAILED="true"
-		return 1
 	fi
 		
 	if [ "$CHECKSFAILED" = "false" ]; then
+		Print_Output "true" "Installing required packages from Entware" "$PASS"
+		opkg update
+		opkg install sqlite3-cli
 		return 0
 	else
 		return 1
@@ -718,9 +726,6 @@ Menu_Install(){
 	
 	Create_Dirs
 	Create_Symlinks
-	
-	opkg update
-	opkg install sqlite3-cli
 	
 	Update_File "chart.js"
 	Update_File "chartjs-plugin-zoom.js"

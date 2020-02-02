@@ -733,14 +733,15 @@ function SetAllChannels(button,setclear){
 	if(setclear == false){startindex=1;}
 	if(button.id.substring(0,2) == "rx"){rxtx="Rx";}
 	else{rxtx="Tx";}
+	if(startindex == 1){$( "#"+rxtx.toLowerCase()+"opt1" ).prop("checked",true);}
 	for(i = 1 + startindex; i < window[rxtx+"Count"]+1; i++){
 		$( "#"+rxtx.toLowerCase()+"opt"+i ).prop("checked",setclear);
 	}
 	for(i = 0; i < metriclist.length; i++){
 		for (i2 = 0; i2 < chartlist.length; i2++) {
 			if(metriclist[i].indexOf(rxtx) != -1){
-				for(i3 = 0 + startindex; i3 < window[rxtx+"Count"]; i3++){
-					window["LineChart"+metriclist[i]+chartlist[i2]].getDatasetMeta(i3).hidden = ! setclear;
+				for(i3 = 0; i3 < window[rxtx+"Count"]; i3++){
+					window["LineChart"+metriclist[i]+chartlist[i2]].getDatasetMeta(i3).hidden = ! $( "#"+rxtx.toLowerCase()+"opt"+(i3+1) ).prop("checked");
 				}
 				window["LineChart"+metriclist[i]+chartlist[i2]].update();
 			}
