@@ -446,7 +446,7 @@ Aggregate_Stats(){
 	sed -i '1d' "$CSV_OUTPUT_DIR/$metricname$period.tmp"
 	min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metricname$period.tmp" | sort -n | head -1)"
 	max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metricname$period.tmp" | sort -n | tail -1)"
-	avg="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metricname$period.tmp" | sort -n | head -1 | awk '{ total += $1; count++ } END { print total/count }')"
+	avg="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metricname$period.tmp" | sort -n | awk '{ total += $1; count++ } END { print total/count }')"
 	{
 	echo "var $metricname$period""min = $min;"
 	echo "var $metricname$period""max = $max;"
