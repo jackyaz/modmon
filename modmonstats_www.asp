@@ -52,6 +52,11 @@ td.nodata {
   font-family: Arial !important;
 }
 
+td.channelcell {
+  padding: 0px !important;
+  border: 0px !important;
+}
+
 .StatsTable {
   table-layout: fixed !important;
   width: 747px !important;
@@ -184,9 +189,7 @@ Array.min = function( array ){
 	return Math.min.apply( Math, array );
 };
 
-var RxColourCount,TxColourCount,RxColours,TxColours;
-RxColourCount = [];
-TxColourCount = [];
+var RxCount,TxCount,RxColours,TxColours;
 RxColours = [];
 TxColours = [];
 
@@ -486,20 +489,27 @@ function ToggleLines() {
 }
 
 function SetRxTxColours(){
+	RxColours = poolColors(RxCount);
+	TxColours = poolColors(TxCount);
+}
+
+function GetMaxChannels(){
+	var RxCountArray = [];
+	var TxCountArray = [];
 	for(i = 0; i < metriclist.length; i++){
 		for (i2 = 0; i2 < chartlist.length; i2++) {
 			varname=metriclist[i]+chartlist[i2]+"size";
 			var objdataname=window[varname];
 			if(varname.indexOf("Rx") != -1){
-				RxColourCount.push(objdataname);
+				RxCountArray.push(objdataname);
 			}
 			else {
-				TxColourCount.push(objdataname);
+				TxCountArray.push(objdataname);
 			}
 		}
 	}
-	RxColours = poolColors(Array.max(RxColourCount));
-	TxColours = poolColors(Array.max(TxColourCount));
+	RxCount = Array.max(RxCountArray);
+	TxCount = Array.max(TxCountArray);
 }
 
 function RedrawAllCharts() {
@@ -542,6 +552,10 @@ function initial(){
 	metriclist.reverse();
 	titlelist.reverse();
 	
+	GetMaxChannels();
+	
+	$("#table_buttons").after(BuildChannelFilterTable());
+	
 	AddEventHandlers();
 	SetRxTxColours();
 	RedrawAllCharts();
@@ -569,70 +583,137 @@ function applyRule() {
 }
 
 function BuildMetricTable(name,title){
-	var charthtml = '<div style="line-height:10px;">&nbsp;</div>'
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_metric_'+name+'">'
-	charthtml+='<thead class="collapsibleparent" id="'+name+'">'
-	charthtml+='<tr>'
-	charthtml+='<td colspan="2">'+title+' (click to expand/collapse)</td>'
-	charthtml+='</tr>'
-	charthtml+='</thead>'
-	charthtml+='<tr>'
-	charthtml+='<td colspan="2" align="center" style="padding: 0px;">'
-	charthtml+='<div class="collapsiblecontent">'
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>'
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">'
-	charthtml+='<tr>'
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>'
-	charthtml+='</tr>'
-	charthtml+='<thead class="collapsible" id="last24_'+name+'">'
-	charthtml+='<tr>'
-	charthtml+='<td colspan="2">Last 24 Hours (click to expand/collapse)</td>'
-	charthtml+='</tr>'
-	charthtml+='</thead>'
-	charthtml+='<tr>'
-	charthtml+='<td colspan="2" align="center" style="padding: 0px;">'
-	charthtml+='<div class="collapsiblecontent">'
-	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'daily" height="300" /></div>'
-	charthtml+='</div>'
-	charthtml+='</td>'
-	charthtml+='</tr>'
-	charthtml+='</table>'
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>'
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">'
-	charthtml+='<thead class="collapsible" id="last7_'+name+'">'
-	charthtml+='<tr>'
-	charthtml+='<td colspan="2">Last 7 days (click to expand/collapse)</td>'
-	charthtml+='</tr>'
-	charthtml+='</thead>'
-	charthtml+='<tr>'
-	charthtml+='<td colspan="2" align="center" style="padding: 0px;">'
-	charthtml+='<div class="collapsiblecontent">'
-	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'weekly" height="300" /></div>'
-	charthtml+='</div>'
-	charthtml+='</td>'
-	charthtml+='</tr>'
-	charthtml+='</table>'
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>'
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">'
-	charthtml+='<thead class="collapsible" id="last30_'+name+'">'
-	charthtml+='<tr>'
-	charthtml+='<td colspan="2">Last 30 days (click to expand/collapse)</td>'
-	charthtml+='</tr>'
-	charthtml+='</thead>'
-	charthtml+='<tr>'
-	charthtml+='<td colspan="2" align="center" style="padding: 0px;">'
-	charthtml+='<div class="collapsiblecontent">'
-	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'monthly" height="300" /></div>'
-	charthtml+='</div>'
-	charthtml+='</td>'
-	charthtml+='</tr>'
-	charthtml+='</table>'
-	charthtml+='</div>'
-	charthtml+='</td>'
-	charthtml+='</tr>'
-	charthtml+='</table>'
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>'
+	var charthtml = '<div style="line-height:10px;">&nbsp;</div>';
+	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_metric_'+name+'">';
+	charthtml+='<thead class="collapsibleparent" id="'+name+'">';
+	charthtml+='<tr>';
+	charthtml+='<td colspan="2">'+title+' (click to expand/collapse)</td>';
+	charthtml+='</tr>';
+	charthtml+='</thead>';
+	charthtml+='<tr>';
+	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
+	charthtml+='<div class="collapsiblecontent">';
+	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
+	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">';
+	charthtml+='<tr>';
+	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
+	charthtml+='</tr>';
+	charthtml+='<thead class="collapsible" id="last24_'+name+'">';
+	charthtml+='<tr>';
+	charthtml+='<td colspan="2">Last 24 Hours (click to expand/collapse)</td>';
+	charthtml+='</tr>';
+	charthtml+='</thead>';
+	charthtml+='<tr>';
+	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
+	charthtml+='<div class="collapsiblecontent">';
+	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'daily" height="300" /></div>';
+	charthtml+='</div>';
+	charthtml+='</td>';
+	charthtml+='</tr>';
+	charthtml+='</table>';
+	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
+	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">';
+	charthtml+='<thead class="collapsible" id="last7_'+name+'">';
+	charthtml+='<tr>';
+	charthtml+='<td colspan="2">Last 7 days (click to expand/collapse)</td>';
+	charthtml+='</tr>';
+	charthtml+='</thead>';
+	charthtml+='<tr>';
+	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
+	charthtml+='<div class="collapsiblecontent">';
+	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'weekly" height="300" /></div>';
+	charthtml+='</div>';
+	charthtml+='</td>';
+	charthtml+='</tr>';
+	charthtml+='</table>';
+	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
+	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">';
+	charthtml+='<thead class="collapsible" id="last30_'+name+'">';
+	charthtml+='<tr>';
+	charthtml+='<td colspan="2">Last 30 days (click to expand/collapse)</td>';
+	charthtml+='</tr>';
+	charthtml+='</thead>';
+	charthtml+='<tr>';
+	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
+	charthtml+='<div class="collapsiblecontent">';
+	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'monthly" height="300" /></div>';
+	charthtml+='</div>';
+	charthtml+='</td>';
+	charthtml+='</tr>';
+	charthtml+='</table>';
+	charthtml+='</div>';
+	charthtml+='</td>';
+	charthtml+='</tr>';
+	charthtml+='</table>';
+	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
 	return charthtml;
+}
+
+function BuildChannelFilterTable(){
+	var channelhtml = '<div style="line-height:10px;">&nbsp;</div>';
+	channelhtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_filters">';
+	channelhtml+='<thead class="collapsibleparent" id="mod_filters">';
+	channelhtml+='<tr>';
+	channelhtml+='<td colspan="2">Chart Filters (click to expand/collapse)</td>';
+	channelhtml+='</tr>';
+	channelhtml+='</thead>';
+	channelhtml+='<tr>';
+	channelhtml+='<td colspan="2" align="center" style="padding: 0px;">';
+	channelhtml+='<div class="collapsiblecontent">';
+	channelhtml+='<div style="line-height:10px;">&nbsp;</div>';
+	channelhtml+=BuildChannelFilterRow("rx","Downstream Channels",RxCount);
+	channelhtml+=BuildChannelFilterRow("tx","Upstream Channels",TxCount);
+	channelhtml+='</div>';
+	channelhtml+='</td>';
+	channelhtml+='</tr>';
+	channelhtml+='</table>';
+	channelhtml+='<div style="line-height:10px;">&nbsp;</div>';
+	return channelhtml;
+}
+
+function BuildChannelFilterRow(rxtx,title,channelcount){
+	var channelhtml='';
+	channelhtml+='<div style="line-height:10px;">&nbsp;</div>';
+	channelhtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_'+rxtx+'">';
+	channelhtml+='<thead id="channel_table_downstream">';
+	channelhtml+='<tr><td colspan="12">'+title+'</td></tr>';
+	channelhtml+='</thead>';
+	channelhtml+='<tr>';
+	channelhtml+='<td colspan="12" align="center" style="padding: 0px;">';
+	channelhtml+='<table width="100%" border="0" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border: 0px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<col style="width:60px;">';
+	channelhtml+='<tr>';
+	for (channelno = 1; channelno < channelcount+1; channelno++) {
+		channelhtml+='<td class="channelcell"><label class="radio"><input type="checkbox" name="'+rxtx+'opt'+channelno+'"/>Ch. '+channelno+'</label></td>';
+		if(channelno % 12 == 0){
+			channelhtml+='</tr><tr>';
+		}
+	}
+	channelhtml+='</tr>';
+	channelhtml+='</table>';
+	channelhtml+='</div>';
+	channelhtml+='</td>';
+	channelhtml+='</tr>';
+	channelhtml+='<tr class="apply_gen" valign="top" height="35px" id="row_'+rxtx+'_buttons">';
+	channelhtml+='<td>';
+	channelhtml+='<input type="button" onclick="" value="Select all" class="button_gen" name="button_clear_'+rxtx+'" id="button_select_'+rxtx+'">';
+	channelhtml+='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+	channelhtml+='<input type="button" onclick="" value="Clear all" class="button_gen" name="button_clear_'+rxtx+'" id="button_clear_'+rxtx+'">';
+	channelhtml+='</td></tr>';
+	channelhtml+='</table>';
+	return channelhtml;
 }
 
 function AddEventHandlers(){
@@ -718,7 +799,7 @@ function AddEventHandlers(){
 <div>&nbsp;</div>
 <div class="formfonttitle" id="statstitle">Superhub 3 Stats</div>
 <table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
-<tr class="apply_gen" valign="top" height="35px">
+<tr class="apply_gen" valign="top" height="35px" id="row_buttons">
 <td style="background-color:rgb(77, 89, 93);border:0px;">
 <input type="button" onclick="applyRule();" value="Update stats now" class="button_gen" name="button">
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -727,10 +808,9 @@ function AddEventHandlers(){
 <input type="button" onclick="ToggleLines();" value="Toggle Lines" class="button_gen" name="button">
 </td>
 </tr>
+<!-- Chart legend filters inserted here -->
 </table>
-
 <!-- Charts inserted here -->
-
 </td>
 </tr>
 </tbody>
