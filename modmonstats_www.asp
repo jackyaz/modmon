@@ -322,7 +322,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 				type: ShowLines,
 				mode: 'horizontal',
 				scaleID: 'y-axis-0',
-				value: getAverage(objdataname),
+				value: getAverage(txtchartname),
 				borderColor: "#fc8500",
 				borderWidth: 1,
 				borderDash: [5, 5],
@@ -339,7 +339,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx){
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					content: "Avg=" + round(getAverage(objdataname),3).toFixed(3)+txtunity,
+					content: "Avg=" + round(getAverage(txtchartname),3).toFixed(3)+txtunity,
 				}
 			},
 			{
