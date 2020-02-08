@@ -14,7 +14,7 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v0.0.1"
+readonly SCRIPT_VERSION="v0.9.9"
 readonly SCRIPT_BRANCH="master"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/""$SCRIPT_NAME""/""$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -48,6 +48,8 @@ Print_Output(){
 Firmware_Version_Check(){
 	if [ "$1" = "install" ]; then
 		if [ "$(uname -o)" = "ASUSWRT-Merlin" ] && [ "$(nvram get buildno | tr -d '.')" -ge "38415" ]; then
+			return 0
+		elif [ "$(uname -o)" = "ASUSWRT-Merlin" ] && nvram get rc_support | grep -qF "am_addons"; then
 			return 0
 		else
 			return 1
@@ -119,7 +121,6 @@ Update_Version(){
 		Update_File "chartjs-plugin-datasource.js"
 		Update_File "hammerjs.js"
 		Update_File "moment.js"
-		Mount_WebUI
 		
 		if [ "$doupdate" != "false" ]; then
 			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated"
@@ -143,7 +144,6 @@ Update_Version(){
 			Update_File "chartjs-plugin-datasource.js"
 			Update_File "hammerjs.js"
 			Update_File "moment.js"
-			Mount_WebUI
 			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated"
 			chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
 			Clear_Lock
@@ -158,8 +158,8 @@ Update_File(){
 		tmpfile="/tmp/$1"
 		Download_File "$SCRIPT_REPO/$1" "$tmpfile"
 		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
+			Download_File "$SCRIPT_REPO/$1" "$SCRIPT_DIR/$1"
 			Print_Output "true" "New version of $1 downloaded" "$PASS"
-			mv "$SCRIPT_DIR/$1" "$SCRIPT_DIR/$1.old"
 			Mount_WebUI
 		fi
 		rm -f "$tmpfile"
@@ -342,43 +342,32 @@ Download_File(){
 
 Get_WebUI_Page () {
 	for i in 1 2 3 4 5 6 7 8 9 10; do
-		page="$SCRIPT_PAGE_DIR/user$i.asp"
+		page="$SCRIPT_WEBPAGE_DIR/user$i.asp"
 		if [ ! -f "$page" ] || [ "$(md5sum < "$1")" = "$(md5sum < "$page")" ]; then
-			echo "user$i.asp"
+			MyPage="user$i.asp"
 			return
 		fi
 	done
-	echo "none"
+	MyPage="none"
 }
 
 Mount_WebUI(){
-	if [ ! -f "$SCRIPT_DIR/modmonstats_www.asp" ]; then
-		Download_File "$SCRIPT_REPO/modmonstats_www.asp" "$SCRIPT_DIR/modmonstats_www.asp"
+	Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp"
+	if [ "$MyPage" = "none" ]; then
+		Print_Output "true" "Unable to mount $SCRIPT_NAME WebUI page, exiting" "$CRIT"
+		exit 1
 	fi
-	if [ ! -f /www/UUAccelerator.asp ]; then
-			umount /www/Advanced_Feedback.asp 2>/dev/null
-			mount -o bind "$SCRIPT_DIR/modmonstats_www.asp" "/www/Advanced_Feedback.asp"
-	else
-		umount /www/UUAccelerator.asp 2>/dev/null
-		mount -o bind "$SCRIPT_DIR/modmonstats_www.asp" "/www/UUAccelerator.asp"
+	Print_Output "true" "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
+	cp -f "$SCRIPT_DIR/modmonstats_www.asp" "$SCRIPT_PAGE_DIR/$MyPage"
+	
+	if [ ! -f "/tmp/menuTree.js" ]; then
+		cp -f "/www/require/modules/menuTree.js" "/tmp/"
 	fi
 	
-	# Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp"
-	# if [ "$MyPage" = "none" ]; then
-	# 	Print_Output "true" "Unable to mount $SCRIPT_NAME WebUI page, exiting" "$CRIT"
-	# 	exit 1
-	# fi
-	# Print_Output "true" "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
-	# cp -f "$SCRIPT_DIR/modmonstats_www.asp" "$SCRIPT_PAGE_DIR/$MyPage"
-	#
-	# if [ ! -f "/tmp/menuTree.js" ]; then
-	# 	cp -f "/www/require/modules/menuTree.js" "/tmp/"
-	# fi
-	#
-	# sed -i "\\~$MyPage~d" /tmp/menuTree.js
-	# sed -i "/url: \"Tools_OtherSettings.asp\", tabName:/a {url: \"$MyPage\", tabName: \"Uptime Monitoring\"}," /tmp/menuTree.js
-	# umount /www/require/modules/menuTree.js 2>/dev/null
-	# mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
+	sed -i "\\~$MyPage~d" /tmp/menuTree.js
+	sed -i "/url: \"Tools_OtherSettings.asp\", tabName:/a {url: \"$MyPage\", tabName: \"Uptime Monitoring\"}," /tmp/menuTree.js
+	umount /www/require/modules/menuTree.js 2>/dev/null
+	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 }
 
 WriteData_ToJS(){
@@ -696,7 +685,7 @@ Check_Requirements(){
 	fi
 	
 	if Firmware_Version_Check "install" ; then
-		Print_Output "true" "Older Merlin firmware detected - $SCRIPT_NAME requires 384.15 or later" "$ERR"
+		Print_Output "true" "Older Merlin firmware detected - $SCRIPT_NAME requires 384.13_4/384.15 or later" "$ERR"
 		CHECKSFAILED="true"
 	fi
 		
@@ -718,15 +707,16 @@ Menu_Install(){
 	
 	if ! Check_Requirements; then
 		Print_Output "true" "Requirements for $SCRIPT_NAME not met, please see above for the reason(s)" "$CRIT"
-		#PressEnter
-		#Clear_Lock
-		#rm -f "/jffs/scripts/$SCRIPT_NAME" 2>/dev/null
-		#exit 1
+		PressEnter
+		Clear_Lock
+		rm -f "/jffs/scripts/$SCRIPT_NAME" 2>/dev/null
+		exit 1
 	fi
 	
 	Create_Dirs
 	Create_Symlinks
 	
+	Update_File "modmonstats_www.asp"
 	Update_File "chart.js"
 	Update_File "chartjs-plugin-zoom.js"
 	Update_File "chartjs-plugin-annotation.js"
@@ -738,7 +728,6 @@ Menu_Install(){
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Shortcut_script create
-	Mount_WebUI
 	
 	Clear_Lock
 }
@@ -788,7 +777,7 @@ Menu_Uninstall(){
 		esac
 	done
 	Shortcut_script delete
-	MyPage="$(Get_WebUI_Page "$SCRIPT_DIR/ntpdstats_www.asp")"
+	Get_WebUI_Page "$SCRIPT_DIR/ntpdstats_www.asp"
 	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
 		sed -i "\\~$MyPage~d" /tmp/menuTree.js
 		umount /www/require/modules/menuTree.js

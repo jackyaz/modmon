@@ -130,14 +130,14 @@ function filterData(chartInstance) {
 	var originalDatasets = chartInstance.data.allData;
 	var chartOptions = chartInstance.options.scales.xAxes[0];
 	
-	var startX = chartOptions.time.min
-	var endX = chartOptions.time.max
+	var startX = chartOptions.time.min;
+	var endX = chartOptions.time.max;
 	if(typeof originalDatasets === 'undefined' || originalDatasets === null) { return; }
 	for(var i = 0; i < originalDatasets.length; i++) {
 		var dataset = datasets[i];
 		var originalData = originalDatasets[i];
 		
-		if (!originalData.length) break
+		if (!originalData.length) break;
 		
 		var s = startX;
 		var e = endX;
@@ -146,23 +146,23 @@ function filterData(chartInstance) {
 		
 		for (var j = 0; j < originalData.length; j++) {
 			if ((sI==null) && originalData[j].x > s) {
-				sI = j
+				sI = j;
 			}
 			if ((eI==null) && originalData[j].x > e) {
-				eI = j
+				eI = j;
 			}
 		}
 		if (sI==null) sI = 0
 		if (originalData[originalData.length - 1].x < s) eI = 0
 			else if (eI==null) eI = originalData.length
 		
-		dataset.data = originalData.slice(sI, eI)
+		dataset.data = originalData.slice(sI, eI);
 	}
 }
 
 var datafilterPlugin = {
 	beforeUpdate: function(chartInstance) {
-		filterData(chartInstance)
+		filterData(chartInstance);
 	}
 }
 </script>
@@ -203,7 +203,7 @@ function Draw_Chart_NoData(txtchartname){
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 	ctx.font = "normal normal bolder 48px Arial";
-	ctx.fillStyle = 'white'
+	ctx.fillStyle = 'white';
 	ctx.fillText('No data to display', 365, 150);
 	ctx.restore();
 }
@@ -472,11 +472,11 @@ function poolColors(a) {
 function ToggleLines() {
 	if(ShowLines == ""){
 		ShowLines = "line";
-		SetCookie("ShowLines","line")
+		SetCookie("ShowLines","line");
 	}
 	else {
 		ShowLines = "";
-		SetCookie("ShowLines","")
+		SetCookie("ShowLines","");
 	}
 	for(i = 0; i < metriclist.length; i++){
 		for (i2 = 0; i2 < chartlist.length; i2++) {
@@ -526,7 +526,7 @@ function GetCookie(cookiename) {
 		return cookie.get("mod_"+cookiename);
 	}
 	else {
-		return ""
+		return "";
 	}
 }
 
@@ -760,11 +760,11 @@ function AddEventHandlers(){
 			var content = this.nextElementSibling.firstElementChild.firstElementChild.firstElementChild;
 			if (content.style.maxHeight){
 					content.style.maxHeight = null;
-					SetCookie(this.id,"collapsed")
+					SetCookie(this.id,"collapsed");
 			} else {
 					content.style.maxHeight = content.scrollHeight + "px";
 					this.parentElement.parentElement.style.maxHeight = (this.parentElement.parentElement.style.maxHeight.substring(0,this.parentElement.parentElement.style.maxHeight.length-2)*1) + content.scrollHeight + "px";
-					SetCookie(this.id,"expanded")
+					SetCookie(this.id,"expanded");
 				}
 		});
 		
@@ -783,10 +783,10 @@ function AddEventHandlers(){
 			var content = this.nextElementSibling.firstElementChild.firstElementChild.firstElementChild;
 			if (content.style.maxHeight){
 				content.style.maxHeight = null;
-				SetCookie(this.id,"collapsed")
+				SetCookie(this.id,"collapsed");
 			} else {
 				content.style.maxHeight = content.scrollHeight + "px";
-				SetCookie(this.id,"expanded")
+				SetCookie(this.id,"expanded");
 			}
 		});
 		if(GetCookie(coll[i].id) == "expanded" || GetCookie(coll[i].id) == ""){

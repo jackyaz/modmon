@@ -2,8 +2,8 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/jackyaz/modmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jackyaz/modmon&amp;utm_campaign=Badge_Grade)
 [![Build Status](https://travis-ci.com/jackyaz/modmon.svg?branch=master)](https://travis-ci.com/jackyaz/modmon)
 
-## v0.0.1
-### Updated on 2020-01-22
+## v0.9.9
+### Updated on 2020-02-08
 ## About
 Track your Superhub 3's stats (such as signal power levels), on your router. Graphs available for on the Tools page of the WebUI.
 
