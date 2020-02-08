@@ -365,7 +365,7 @@ Mount_WebUI(){
 	fi
 	
 	sed -i "\\~$MyPage~d" /tmp/menuTree.js
-	sed -i "/url: \"Tools_OtherSettings.asp\", tabName:/a {url: \"$MyPage\", tabName: \"Uptime Monitoring\"}," /tmp/menuTree.js
+	sed -i "/url: \"Tools_OtherSettings.asp\", tabName:/a {url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
 	umount /www/require/modules/menuTree.js 2>/dev/null
 	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 }
@@ -777,7 +777,7 @@ Menu_Uninstall(){
 		esac
 	done
 	Shortcut_script delete
-	Get_WebUI_Page "$SCRIPT_DIR/ntpdstats_www.asp"
+	Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp"
 	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
 		sed -i "\\~$MyPage~d" /tmp/menuTree.js
 		umount /www/require/modules/menuTree.js
