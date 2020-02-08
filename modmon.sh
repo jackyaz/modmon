@@ -372,7 +372,7 @@ Mount_WebUI(){
 	fi
 	
 	lineappafter="$(( $(grep -n 'index: "menu_Addons"' /tmp/menuTree.js | cut -f1 -d':') + 1))"
-	sed -i "$lineappafter""a/{url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
+	sed -i "$lineappafter""a{url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
 	umount /www/require/modules/menuTree.js 2>/dev/null
 	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 }
