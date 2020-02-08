@@ -365,7 +365,14 @@ Mount_WebUI(){
 	fi
 	
 	sed -i "\\~$MyPage~d" /tmp/menuTree.js
-	sed -i "/url: \"Tools_OtherSettings.asp\", tabName:/a {url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
+	
+	if ! grep -q 'menuName: "Addons"' /tmp/menuTree.js ; then
+		lineinsbefore="$(( $(grep -n "exclude:" /tmp/menuTree.js | cut -f1 -d':') - 1))"
+		sed -i "$lineinsbefore"'i,\n{\nmenuName: "Addons",\nindex: "menu_Addons",\ntab: [\n{url: "NULL", tabName: "__INHERIT__"}\n]\n}' /tmp/menuTree.js
+	fi
+	
+	lineappafter="$(( $(grep -n 'index: "menu_Addons"' /tmp/menuTree.js | cut -f1 -d':') + 1))"
+	sed -i "$lineappafter""a/{url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
 	umount /www/require/modules/menuTree.js 2>/dev/null
 	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 }
