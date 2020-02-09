@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/jackyaz/modmon.svg?branch=master)](https://travis-ci.com/jackyaz/modmon)
 
 ## v0.9.9
-### Updated on 2020-02-08
+### Updated on 2020-02-09
 ## About
 Track your Superhub 3's stats (such as signal power levels), on your router. Graphs available for on the Tools page of the WebUI.
 
