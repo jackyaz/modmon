@@ -116,6 +116,7 @@ Update_Version(){
 		
 		Update_File "modmonstats_www.asp"
 		Update_File "redirect.htm"
+		Update_File "addons.png"
 		Update_File "chart.js"
 		Update_File "chartjs-plugin-zoom.js"
 		Update_File "chartjs-plugin-annotation.js"
@@ -140,6 +141,7 @@ Update_Version(){
 			Print_Output "true" "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
 			Update_File "modmonstats_www.asp"
 			Update_File "redirect.htm"
+			Update_File "addons.png"
 			Update_File "chart.js"
 			Update_File "chartjs-plugin-zoom.js"
 			Update_File "chartjs-plugin-annotation.js"
@@ -165,7 +167,7 @@ Update_File(){
 			Mount_WebUI
 		fi
 		rm -f "$tmpfile"
-	elif [ "$1" = "chart.js" ] || [ "$1" = "chartjs-plugin-zoom.js" ] || [ "$1" = "chartjs-plugin-annotation.js" ] || [ "$1" = "moment.js" ] || [ "$1" =  "hammerjs.js" ] || [ "$1" = "chartjs-plugin-datasource.js" ] || [ "$1" = "redirect.htm" ]; then
+	elif [ "$1" = "chart.js" ] || [ "$1" = "chartjs-plugin-zoom.js" ] || [ "$1" = "chartjs-plugin-annotation.js" ] || [ "$1" = "moment.js" ] || [ "$1" =  "hammerjs.js" ] || [ "$1" = "chartjs-plugin-datasource.js" ] || [ "$1" = "redirect.htm" ] || [ "$1" = "addons.png" ]; then
 		tmpfile="/tmp/$1"
 		Download_File "$SHARED_REPO/$1" "$tmpfile"
 		if [ ! -f "$SHARED_DIR/$1" ]; then
@@ -249,6 +251,7 @@ Create_Symlinks(){
 	ln -s "$SHARED_DIR/hammerjs.js" "$SHARED_WEB_DIR/hammerjs.js" 2>/dev/null
 	ln -s "$SHARED_DIR/moment.js" "$SHARED_WEB_DIR/moment.js" 2>/dev/null
 	ln -s "$SHARED_DIR/redirect.htm" "$SHARED_WEB_DIR/redirect.htm" 2>/dev/null
+	ln -s "$SHARED_DIR/addons.png" "$SHARED_WEB_DIR/addons.png" 2>/dev/null
 }
 	
 Auto_ServiceEvent(){
@@ -362,6 +365,17 @@ Mount_WebUI(){
 	fi
 	Print_Output "true" "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 	cp -f "$SCRIPT_DIR/modmonstats_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
+	
+	if [ ! -f "/tmp/index_style.css" ]; then
+		cp -f "/www/index_style.css" "/tmp/"
+	fi
+	
+	if ! grep -q '.menu_Addons' /tmp/index_style.css ; then
+		echo ".menu_Addons { background: url(ext/shared-jy/addons.png); }" >> /tmp/index_style.css
+	fi
+	
+	umount /www/index_style.css 2>/dev/null
+	mount -o bind /tmp/index_style.css /www/index_style.css
 	
 	if [ ! -f "/tmp/menuTree.js" ]; then
 		cp -f "/www/require/modules/menuTree.js" "/tmp/"
@@ -727,6 +741,7 @@ Menu_Install(){
 	
 	Update_File "modmonstats_www.asp"
 	Update_File "redirect.htm"
+	Update_File "addons.png"
 	Update_File "chart.js"
 	Update_File "chartjs-plugin-zoom.js"
 	Update_File "chartjs-plugin-annotation.js"
