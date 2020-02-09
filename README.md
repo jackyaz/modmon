@@ -21,6 +21,7 @@ Love the script and want to support future development? Any and all donations gr
 ### Models
 All models supported by [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/about). Models confirmed to work are below:
 *   RT-AC86U
+*   RT-AC87U
 
 ### Firmware versions
 You must be running firmware no earlier than 384.15 [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/)
