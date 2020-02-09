@@ -5,7 +5,7 @@
 ## v0.9.9
 ### Updated on 2020-02-09
 ## About
-Track your Superhub 3's stats (such as signal power levels), on your router. Graphs available for on the Tools page of the WebUI.
+Track your Superhub 3's stats (such as signal power levels), on your router. Graphs available on the Addons page of the WebUI.
 
 modmon is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
 
