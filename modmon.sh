@@ -387,7 +387,7 @@ Mount_WebUI(){
 		lineinsbefore="$(( $(grep -n "exclude:" /tmp/menuTree.js | cut -f1 -d':') - 1))"
 		sed -i "$lineinsbefore"'i,\n{\nmenuName: "Addons",\nindex: "menu_Addons",\ntab: [\n{url: "ext/shared-jy/redirect.htm", tabName: "Help & Support"},\n{url: "NULL", tabName: "__INHERIT__"}\n]\n}' /tmp/menuTree.js
 	fi
-	
+	sed -i "s~ext/shared-jy/redirect.htm~javascript:window.open('/ext/shared-jy/redirect.htm','_blank')~" /tmp/menuTree.js
 	sed -i "/url: \"ext\/shared-jy\/redirect.htm\", tabName:/i {url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
 	umount /www/require/modules/menuTree.js 2>/dev/null
 	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
