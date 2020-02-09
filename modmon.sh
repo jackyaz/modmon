@@ -115,6 +115,7 @@ Update_Version(){
 		fi
 		
 		Update_File "modmonstats_www.asp"
+		Update_File "amtmredirect.htm"
 		Update_File "chart.js"
 		Update_File "chartjs-plugin-zoom.js"
 		Update_File "chartjs-plugin-annotation.js"
@@ -138,6 +139,7 @@ Update_Version(){
 			serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 			Print_Output "true" "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
 			Update_File "modmonstats_www.asp"
+			Update_File "amtmredirect.htm"
 			Update_File "chart.js"
 			Update_File "chartjs-plugin-zoom.js"
 			Update_File "chartjs-plugin-annotation.js"
@@ -163,7 +165,7 @@ Update_File(){
 			Mount_WebUI
 		fi
 		rm -f "$tmpfile"
-	elif [ "$1" = "chart.js" ] || [ "$1" = "chartjs-plugin-zoom.js" ] || [ "$1" = "chartjs-plugin-annotation.js" ] || [ "$1" = "moment.js" ] || [ "$1" =  "hammerjs.js" ] || [ "$1" = "chartjs-plugin-datasource.js" ]; then
+	elif [ "$1" = "chart.js" ] || [ "$1" = "chartjs-plugin-zoom.js" ] || [ "$1" = "chartjs-plugin-annotation.js" ] || [ "$1" = "moment.js" ] || [ "$1" =  "hammerjs.js" ] || [ "$1" = "chartjs-plugin-datasource.js" ] || [ "$1" = "amtmredirect.htm" ]; then
 		tmpfile="/tmp/$1"
 		Download_File "$SHARED_REPO/$1" "$tmpfile"
 		if [ ! -f "$SHARED_DIR/$1" ]; then
@@ -246,6 +248,7 @@ Create_Symlinks(){
 	ln -s "$SHARED_DIR/chartjs-plugin-datasource.js" "$SHARED_WEB_DIR/chartjs-plugin-datasource.js" 2>/dev/null
 	ln -s "$SHARED_DIR/hammerjs.js" "$SHARED_WEB_DIR/hammerjs.js" 2>/dev/null
 	ln -s "$SHARED_DIR/moment.js" "$SHARED_WEB_DIR/moment.js" 2>/dev/null
+	ln -s "$SHARED_DIR/amtmredirect.htm" "$SHARED_WEB_DIR/amtmredirect.htm" 2>/dev/null
 }
 	
 Auto_ServiceEvent(){
@@ -368,12 +371,12 @@ Mount_WebUI(){
 	
 	if ! grep -q 'menuName: "Addons"' /tmp/menuTree.js ; then
 		lineinsbefore="$(( $(grep -n "exclude:" /tmp/menuTree.js | cut -f1 -d':') - 1))"
-		sed -i "$lineinsbefore"'i,\n{\nmenuName: "Addons",\nindex: "menu_Addons",\ntab: [\n{url: "amtmredirect.htm", tabName: "Learn about AMTM"}\n{url: "NULL", tabName: "__INHERIT__"}\n]\n}' /tmp/menuTree.js
+		sed -i "$lineinsbefore"'i,\n{\nmenuName: "Addons",\nindex: "menu_Addons",\ntab: [\n{url: "amtmredirect.htm", tabName: "Learn about AMTM"},\n{url: "NULL", tabName: "__INHERIT__"}\n]\n}' /tmp/menuTree.js
 	fi
 	
 	#lineappafter="$(( $(grep -n 'index: "menu_Addons"' /tmp/menuTree.js | cut -f1 -d':') + 1))"
 	
-	sed -i "/url: \"amtmredirect.htm\", tabName:/a {url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
+	sed -i "/url: \"amtmredirect.htm\", tabName:/i {url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
 	#sed -i "$lineappafter""a{url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
 	umount /www/require/modules/menuTree.js 2>/dev/null
 	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
@@ -726,6 +729,7 @@ Menu_Install(){
 	Create_Symlinks
 	
 	Update_File "modmonstats_www.asp"
+	Update_File "amtmredirect.htm"
 	Update_File "chart.js"
 	Update_File "chartjs-plugin-zoom.js"
 	Update_File "chartjs-plugin-annotation.js"
