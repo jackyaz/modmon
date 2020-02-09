@@ -115,7 +115,7 @@ Update_Version(){
 		fi
 		
 		Update_File "modmonstats_www.asp"
-		Update_File "amtmredirect.htm"
+		Update_File "redirect.htm"
 		Update_File "chart.js"
 		Update_File "chartjs-plugin-zoom.js"
 		Update_File "chartjs-plugin-annotation.js"
@@ -139,7 +139,7 @@ Update_Version(){
 			serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 			Print_Output "true" "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
 			Update_File "modmonstats_www.asp"
-			Update_File "amtmredirect.htm"
+			Update_File "redirect.htm"
 			Update_File "chart.js"
 			Update_File "chartjs-plugin-zoom.js"
 			Update_File "chartjs-plugin-annotation.js"
@@ -248,7 +248,7 @@ Create_Symlinks(){
 	ln -s "$SHARED_DIR/chartjs-plugin-datasource.js" "$SHARED_WEB_DIR/chartjs-plugin-datasource.js" 2>/dev/null
 	ln -s "$SHARED_DIR/hammerjs.js" "$SHARED_WEB_DIR/hammerjs.js" 2>/dev/null
 	ln -s "$SHARED_DIR/moment.js" "$SHARED_WEB_DIR/moment.js" 2>/dev/null
-	ln -s "$SHARED_DIR/amtmredirect.htm" "$SHARED_WEB_DIR/amtmredirect.htm" 2>/dev/null
+	ln -s "$SHARED_DIR/redirect.htm" "$SHARED_WEB_DIR/redirect.htm" 2>/dev/null
 }
 	
 Auto_ServiceEvent(){
@@ -726,7 +726,7 @@ Menu_Install(){
 	Create_Symlinks
 	
 	Update_File "modmonstats_www.asp"
-	Update_File "amtmredirect.htm"
+	Update_File "redirect.htm"
 	Update_File "chart.js"
 	Update_File "chartjs-plugin-zoom.js"
 	Update_File "chartjs-plugin-annotation.js"
