@@ -705,6 +705,8 @@ Check_Requirements(){
 		Print_Output "true" "Custom JFFS Scripts enabled" "$WARN"
 	fi
 	
+	/usr/sbin/curl -fsL --retry 3 "http://192.168.100.1/getRouterStatus" || { Print_Output "true" "Modem not compatible - error detected when trying to access modem's stats" "$ERR"; CHECKSFAILED="true"; }
+	
 	if [ ! -f "/opt/bin/opkg" ]; then
 		Print_Output "true" "Entware not detected!" "$ERR"
 		CHECKSFAILED="true"
