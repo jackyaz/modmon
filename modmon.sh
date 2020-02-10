@@ -712,7 +712,7 @@ Check_Requirements(){
 		CHECKSFAILED="true"
 	fi
 	
-	if Firmware_Version_Check "install" ; then
+	if ! Firmware_Version_Check "install" ; then
 		Print_Output "true" "Older Merlin firmware detected - $SCRIPT_NAME requires 384.13_4/384.15 or later" "$ERR"
 		CHECKSFAILED="true"
 	fi
