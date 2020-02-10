@@ -793,6 +793,16 @@ Menu_Uninstall(){
 	Auto_Startup delete 2>/dev/null
 	Auto_Cron delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
+	Shortcut_script delete
+	Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp"
+	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
+		sed -i "\\~$MyPage~d" /tmp/menuTree.js
+		umount /www/require/modules/menuTree.js
+		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
+		rm -rf "{$SCRIPT_WEBPAGE_DIR:?}/$MyPage"
+	fi
+	rm -f "$SCRIPT_DIR/modmonstats_www.asp" 2>/dev/null
+	rm -rf "$SCRIPT_WEB_DIR" 2>/dev/null
 	while true; do
 		printf "\\n\\e[1mDo you want to delete %s stats? (y/n)\\e[0m\\n" "$SCRIPT_NAME"
 		read -r "confirm"
@@ -806,16 +816,6 @@ Menu_Uninstall(){
 			;;
 		esac
 	done
-	Shortcut_script delete
-	Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp"
-	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
-		sed -i "\\~$MyPage~d" /tmp/menuTree.js
-		umount /www/require/modules/menuTree.js
-		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
-		rm -rf "{$SCRIPT_WEBPAGE_DIR:?}/$MyPage"
-	fi
-	rm -f "$SCRIPT_DIR/modmonstats_www.asp" 2>/dev/null
-	rm -rf "$SCRIPT_WEB_DIR" 2>/dev/null
 	rm -f "/jffs/scripts/$SCRIPT_NAME" 2>/dev/null
 	Clear_Lock
 	Print_Output "true" "Uninstall completed" "$PASS"
