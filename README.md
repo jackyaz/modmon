@@ -1,11 +1,11 @@
-# modmon - Virgin Media Superhub 3 monitoring for AsusWRT Merlin - with graphs
+# modmon - Virgin Media Hub 3.0 monitoring for AsusWRT Merlin - with graphs
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/jackyaz/modmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jackyaz/modmon&amp;utm_campaign=Badge_Grade)
 [![Build Status](https://travis-ci.com/jackyaz/modmon.svg?branch=master)](https://travis-ci.com/jackyaz/modmon)
 
 ## v0.9.9
 ### Updated on 2020-02-09
 ## About
-Track your Superhub 3's stats (such as signal power levels), on your router. Graphs available on the Addons page of the WebUI.
+Track your Hub 3.0's stats (such as signal power levels), on your router. Graphs available on the Addons page of the WebUI.
 
 modmon is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
 
@@ -48,7 +48,7 @@ If this does not work, you will need to use the full path:
 Launch modmon and select option u
 
 ## Help
-Please post about any issues and problems here: [modmon on SNBForums](https://www.snbforums.com/threads/beta-modmon-webui-for-monitoring-virgin-media-superhub-3-stats.61363/)
+Please post about any issues and problems here: [modmon on SNBForums](https://www.snbforums.com/threads/beta-modmon-webui-for-monitoring-virgin-media-hub-3-0-stats.61363/)
 
 ## FAQs
 ### I haven't used scripts before on AsusWRT-Merlin
