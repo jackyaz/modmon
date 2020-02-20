@@ -524,9 +524,7 @@ Generate_Stats(){
 				counter=$((counter + 1))
 			done
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			{
-			echo "var $metric""dailysize = $channelcount;"
-			} >> "$SCRIPT_DIR/modstatsdata.js"
+			echo "var $metric""dailysize = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
 			Aggregate_Stats "$metric" "daily"
 			rm -f "$CSV_OUTPUT_DIR/$metric""daily.tmp"*
 			rm -f /tmp/modmon-stats.sql
