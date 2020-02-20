@@ -396,29 +396,6 @@ Mount_WebUI(){
 	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 }
 
-WriteData_ToJS(){
-	metricarray="$1"
-	inputfile="$2"
-	outputfile="$3"
-	shift;shift;shift
-	
-	for var in "$@"; do
-	{
-		echo "var $var;"
-		echo "$var = [];"; } >> "$outputfile"
-		contents="$var"'.unshift('
-		while IFS='' read -r line || [ -n "$line" ]; do
-			if echo "$line" | grep -q "NaN"; then continue; fi
-			datapoint="{ x: moment.unix(""$(echo "$line" | awk 'BEGIN{FS=","}{ print $1 }' | awk '{$1=$1};1')""), y: ""$(echo "$line" | awk 'BEGIN{FS=","}{ print $2 }' | awk '{$1=$1};1')"" }"
-			contents="$contents""$datapoint"","
-		done < "$inputfile"
-		contents=$(echo "$contents" | sed 's/,$//')
-		contents="$contents"");"
-		printf "%s\\r\\n" "$contents" >> "$outputfile"
-		printf "%s.push(%s);\\r\\n\\r\\n" "$metricarray" "$var" >> "$outputfile"
-	done
-}
-
 WriteStats_ToJS(){
 	echo "function $3(){" > "$2"
 	html='document.getElementById("'"$4"'").innerHTML="'
