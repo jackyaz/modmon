@@ -115,14 +115,7 @@ Update_Version(){
 		fi
 		
 		Update_File "modmonstats_www.asp"
-		Update_File "redirect.htm"
-		Update_File "addons.png"
-		Update_File "chart.js"
-		Update_File "chartjs-plugin-zoom.js"
-		Update_File "chartjs-plugin-annotation.js"
-		Update_File "chartjs-plugin-datasource.js"
-		Update_File "hammerjs.js"
-		Update_File "moment.js"
+		Update_File "shared-jy.tar.gz"
 		
 		if [ "$doupdate" != "false" ]; then
 			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated"
@@ -140,14 +133,7 @@ Update_Version(){
 			serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 			Print_Output "true" "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
 			Update_File "modmonstats_www.asp"
-			Update_File "redirect.htm"
-			Update_File "addons.png"
-			Update_File "chart.js"
-			Update_File "chartjs-plugin-zoom.js"
-			Update_File "chartjs-plugin-annotation.js"
-			Update_File "chartjs-plugin-datasource.js"
-			Update_File "hammerjs.js"
-			Update_File "moment.js"
+			Update_File "shared-jy.tar.gz"
 			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated"
 			chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
 			Clear_Lock
@@ -167,17 +153,24 @@ Update_File(){
 			Mount_WebUI
 		fi
 		rm -f "$tmpfile"
-	elif [ "$1" = "chart.js" ] || [ "$1" = "chartjs-plugin-zoom.js" ] || [ "$1" = "chartjs-plugin-annotation.js" ] || [ "$1" = "moment.js" ] || [ "$1" =  "hammerjs.js" ] || [ "$1" = "chartjs-plugin-datasource.js" ] || [ "$1" = "redirect.htm" ] || [ "$1" = "addons.png" ]; then
-		tmpfile="/tmp/$1"
-		Download_File "$SHARED_REPO/$1" "$tmpfile"
-		if [ ! -f "$SHARED_DIR/$1" ]; then
-			touch "$SHARED_DIR/$1"
-		fi
-		if ! diff -q "$tmpfile" "$SHARED_DIR/$1" >/dev/null 2>&1; then
-			Print_Output "true" "New version of $1 downloaded" "$PASS"
+	elif [ "$1" = "shared-jy.tar.gz" ]; then
+		if [ ! -f "$SHARED_DIR/$1.md5" ]; then
 			Download_File "$SHARED_REPO/$1" "$SHARED_DIR/$1"
+			Download_File "$SHARED_REPO/$1.md5" "$SHARED_DIR/$1.md5"
+			tar -xzf "$SHARED_DIR/$1" -C "$SHARED_DIR"
+			rm -f "$SHARED_DIR/$1"
+			Print_Output "true" "New version of $1 downloaded" "$PASS"
+		else
+			localmd5="$(cat "$SHARED_DIR/$1.md5")"
+			remotemd5="$(curl -fsL --retry 3 "$SHARED_REPO/$1.md5")"
+			if [ "$localmd5" != "$remotemd5" ]; then
+				Download_File "$SHARED_REPO/$1" "$SHARED_DIR/$1"
+				Download_File "$SHARED_REPO/$1.md5" "$SHARED_DIR/$1.md5"
+				tar -xzf "$SHARED_DIR/$1" -C "$SHARED_DIR"
+				rm -f "$SHARED_DIR/$1"
+				Print_Output "true" "New version of $1 downloaded" "$PASS"
+			fi
 		fi
-		rm -f "$tmpfile"
 	else
 		return 1
 	fi
@@ -230,28 +223,21 @@ Create_Dirs(){
 	if [ ! -d "$SCRIPT_WEB_DIR" ]; then
 		mkdir -p "$SCRIPT_WEB_DIR"
 	fi
-	
-	if [ ! -d "$SHARED_WEB_DIR" ]; then
-		mkdir -p "$SHARED_WEB_DIR"
-	fi
 }
 
 Create_Symlinks(){
 	rm -f "$SCRIPT_WEB_DIR/"* 2>/dev/null
-	rm -f "$SHARED_WEB_DIR/"* 2>/dev/null
 	
 	ln -s "$SCRIPT_DIR/modstatsdata.js" "$SCRIPT_WEB_DIR/modstatsdata.js" 2>/dev/null
 	ln -s "$SCRIPT_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
-	ln -s "$CSV_OUTPUT_DIR" "$SCRIPT_WEB_DIR/csv" 2>/dev/null
 	
-	ln -s "$SHARED_DIR/chart.js" "$SHARED_WEB_DIR/chart.js" 2>/dev/null
-	ln -s "$SHARED_DIR/chartjs-plugin-zoom.js" "$SHARED_WEB_DIR/chartjs-plugin-zoom.js" 2>/dev/null
-	ln -s "$SHARED_DIR/chartjs-plugin-annotation.js" "$SHARED_WEB_DIR/chartjs-plugin-annotation.js" 2>/dev/null
-	ln -s "$SHARED_DIR/chartjs-plugin-datasource.js" "$SHARED_WEB_DIR/chartjs-plugin-datasource.js" 2>/dev/null
-	ln -s "$SHARED_DIR/hammerjs.js" "$SHARED_WEB_DIR/hammerjs.js" 2>/dev/null
-	ln -s "$SHARED_DIR/moment.js" "$SHARED_WEB_DIR/moment.js" 2>/dev/null
-	ln -s "$SHARED_DIR/redirect.htm" "$SHARED_WEB_DIR/redirect.htm" 2>/dev/null
-	ln -s "$SHARED_DIR/addons.png" "$SHARED_WEB_DIR/addons.png" 2>/dev/null
+	if [ ! -d "$SCRIPT_WEB_DIR/csv" ]; then
+		ln -s "$CSV_OUTPUT_DIR" "$SCRIPT_WEB_DIR/csv" 2>/dev/null
+	fi
+	
+	if [ ! -d "$SHARED_WEB_DIR" ]; then
+		ln -s "$SHARED_DIR" "$SHARED_WEB_DIR" 2>/dev/null
+	fi
 }
 	
 Auto_ServiceEvent(){
@@ -720,14 +706,7 @@ Menu_Install(){
 	Create_Symlinks
 	
 	Update_File "modmonstats_www.asp"
-	Update_File "redirect.htm"
-	Update_File "addons.png"
-	Update_File "chart.js"
-	Update_File "chartjs-plugin-zoom.js"
-	Update_File "chartjs-plugin-annotation.js"
-	Update_File "chartjs-plugin-datasource.js"
-	Update_File "hammerjs.js"
-	Update_File "moment.js"
+	Update_File "shared-jy.tar.gz"
 	
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
