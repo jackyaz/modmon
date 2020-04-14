@@ -359,7 +359,7 @@ Mount_WebUI(){
 	Print_Output "true" "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 	cp -f "$SCRIPT_DIR/modmonstats_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
 	echo "Modem Monitoring" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
-
+	
 	if [ "$(uname -o)" = "ASUSWRT-Merlin" ]; then
 	
 		if [ ! -f "/tmp/index_style.css" ]; then
@@ -454,7 +454,7 @@ WriteSql_ToFile(){
 		dividefactor=10
 	fi
 	
-	echo "SELECT 'Ch. ' || [ChannelNum] Channel, Min([Timestamp]) Time, IFNULL(Avg([$1])/$dividefactor,'NaN') Value FROM $2 WHERE ([Timestamp] >= $timenow - ($multiplier*$maxcount)) GROUP BY ([Timestamp]/($multiplier));" >> "$7"
+	echo "SELECT ('Ch. ' || [ChannelNum]) Channel, Min([Timestamp]) Time, IFNULL(Avg([$1])/$dividefactor,'NaN') Value FROM $2 WHERE ([Timestamp] >= $timenow - ($multiplier*$maxcount)) GROUP BY Channel,([Timestamp]/($multiplier)) ORDER BY [ChannelNum] ASC;" >> "$7"
 }
 
 Get_Modem_Stats(){
@@ -526,14 +526,6 @@ Generate_CSVs(){
 	
 	for metric in $metriclist; do
 	{
-		#{
-		#	echo ".mode list"
-		#	echo "SELECT COUNT(DISTINCT ChannelNum) FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400);"
-		#} > /tmp/modmon-stats.sql
-		
-		#channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql)"
-		#rm -f /tmp/modmon-stats.sql
-		
 		dividefactor=1
 		if echo "$metric" | grep -qF "RxPwr" || echo "$metric" | grep -qF "RxSnr" ; then
 			dividefactor=10
@@ -543,7 +535,7 @@ Generate_CSVs(){
 			echo ".mode csv"
 			echo ".headers on"
 			echo ".output $CSV_OUTPUT_DIR/$metric""daily.htm"
-			echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= $timenow - 86400);"
+			echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= $timenow - 86400) ORDER BY [ChannelNum] ASC;"
 		} > /tmp/modmon-stats.sql
 		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 		rm -f /tmp/modmon-stats.sql
@@ -553,7 +545,7 @@ Generate_CSVs(){
 				echo ".mode csv"
 				echo ".headers on"
 				echo ".output $CSV_OUTPUT_DIR/$metric""weekly"".htm"
-				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*7);"
+				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*7) ORDER BY [ChannelNum] ASC;"
 			} > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
@@ -562,7 +554,7 @@ Generate_CSVs(){
 				echo ".mode csv"
 				echo ".headers on"
 				echo ".output $CSV_OUTPUT_DIR/$metric""monthly"".htm"
-				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*30);"
+				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [ChannelNum] ASC;"
 			} > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
