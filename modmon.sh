@@ -479,6 +479,8 @@ Get_Modem_Stats(){
 		for metric in $metriclist; do
 		{
 			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] REAL NOT NULL);" >> /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			rm -f /tmp/modmon-stats.sql
 			
 			channelcount="$(grep -c "$metric" $shstatsfile)"
 			
@@ -524,25 +526,25 @@ Generate_CSVs(){
 	
 	for metric in $metriclist; do
 	{
-		{
-			echo ".mode list"
-			echo "select count(distinct ChannelNum) from modstats_$metric WHERE [Timestamp] >= ($timenow - 86400);"
-		} > /tmp/modmon-stats.sql
+		#{
+		#	echo ".mode list"
+		#	echo "SELECT COUNT(DISTINCT ChannelNum) FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400);"
+		#} > /tmp/modmon-stats.sql
 		
-		channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql)"
-		rm -f /tmp/modmon-stats.sql
-		
-		{
-			echo ".mode csv"
-			echo ".output $CSV_OUTPUT_DIR/$metric""daily.tmp"
-		} > /tmp/modmon-stats.sql
+		#channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql)"
+		#rm -f /tmp/modmon-stats.sql
 		
 		dividefactor=1
 		if echo "$metric" | grep -qF "RxPwr" || echo "$metric" | grep -qF "RxSnr" ; then
 			dividefactor=10
 		fi
 		
-		echo "SELECT 'Ch. ' || [ChannelNum] Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= $timenow - 86400);" >> /tmp/modmon-stats.sql
+		{
+			echo ".mode csv"
+			echo ".headers on"
+			echo ".output $CSV_OUTPUT_DIR/$metric""daily.htm"
+			echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= $timenow - 86400);"
+		} > /tmp/modmon-stats.sql
 		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 		rm -f /tmp/modmon-stats.sql
 		
@@ -551,7 +553,7 @@ Generate_CSVs(){
 				echo ".mode csv"
 				echo ".headers on"
 				echo ".output $CSV_OUTPUT_DIR/$metric""weekly"".htm"
-				echo "SELECT 'Ch. ' || [ChannelNum] Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value from modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*7);"
+				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*7);"
 			} > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
@@ -560,7 +562,7 @@ Generate_CSVs(){
 				echo ".mode csv"
 				echo ".headers on"
 				echo ".output $CSV_OUTPUT_DIR/$metric""monthly"".htm"
-				echo "select SELECT 'Ch. ' || [ChannelNum] Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value from modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*30);"
+				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*30);"
 			} > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
@@ -599,8 +601,8 @@ Generate_CSVs(){
 		opkg update
 		opkg install p7zip
 	fi
-	/opt/bin/7z a -y -bsp0 -bso0 -tzip "/tmp/""$SCRIPT_NAME_LOWER""data.zip" "$tmpoutputdir/*"
-	mv "/tmp/""$SCRIPT_NAME_LOWER""data.zip" "$CSV_OUTPUT_DIR"
+	/opt/bin/7z a -y -bsp0 -bso0 -tzip "/tmp/""$SCRIPT_NAME""data.zip" "$tmpoutputdir/*"
+	mv "/tmp/""$SCRIPT_NAME""data.zip" "$CSV_OUTPUT_DIR"
 	rm -rf "$tmpoutputdir"
 }
 
