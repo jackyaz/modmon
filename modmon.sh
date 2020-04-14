@@ -14,10 +14,11 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v0.9.9"
-readonly SCRIPT_BRANCH="master"
+readonly SCRIPT_VERSION="v1.0.0"
+readonly SCRIPT_BRANCH="develop"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/""$SCRIPT_NAME""/""$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
+readonly SCRIPT_CONF="$SCRIPT_DIR/config"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$SCRIPT_NAME"
 readonly SHARED_DIR="/jffs/addons/shared-jy"
@@ -46,20 +47,10 @@ Print_Output(){
 }
 
 Firmware_Version_Check(){
-	if [ "$1" = "install" ]; then
-		if [ "$(uname -o)" = "ASUSWRT-Merlin" ] && [ "$(nvram get buildno | tr -d '.')" -ge "38415" ]; then
-			return 0
-		elif [ "$(uname -o)" = "ASUSWRT-Merlin" ] && nvram get rc_support | grep -qF "am_addons"; then
-			return 0
-		else
-			return 1
-		fi
-	elif [ "$1" = "webui" ]; then
-		if nvram get rc_support | grep -qF "am_addons"; then
-			return 0
-		else
-			return 1
-		fi
+	if nvram get rc_support | grep -qF "am_addons"; then
+		return 0
+	else
+		return 1
 	fi
 }
 
@@ -121,6 +112,7 @@ Update_Version(){
 			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated"
 			chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
 			Clear_Lock
+			exec "$0"
 			exit 0
 		else
 			Print_Output "true" "No new version - latest is $localver" "$WARN"
@@ -137,6 +129,7 @@ Update_Version(){
 			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated"
 			chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
 			Clear_Lock
+			exec "$0"
 			exit 0
 		;;
 	esac
@@ -228,7 +221,6 @@ Create_Dirs(){
 Create_Symlinks(){
 	rm -f "$SCRIPT_WEB_DIR/"* 2>/dev/null
 	
-	ln -s "$SCRIPT_DIR/modstatsdata.js" "$SCRIPT_WEB_DIR/modstatsdata.js" 2>/dev/null
 	ln -s "$SCRIPT_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
 	
 	if [ ! -d "$SCRIPT_WEB_DIR/csv" ]; then
@@ -237,6 +229,21 @@ Create_Symlinks(){
 	
 	if [ ! -d "$SHARED_WEB_DIR" ]; then
 		ln -s "$SHARED_DIR" "$SHARED_WEB_DIR" 2>/dev/null
+	fi
+}
+
+Conf_Exists(){
+	if [ -f "$SCRIPT_CONF" ]; then
+		dos2unix "$SCRIPT_CONF"
+		chmod 0644 "$SCRIPT_CONF"
+		sed -i -e 's/"//g' "$SCRIPT_CONF"
+		return 0
+	else
+		{
+		echo "OUTPUTDATAMODE=raw"
+		echo "OUTPUTTIMEMODE=unix"
+		} > "$SCRIPT_CONF"
+		return 1
 	fi
 }
 	
@@ -351,35 +358,73 @@ Mount_WebUI(){
 	fi
 	Print_Output "true" "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 	cp -f "$SCRIPT_DIR/modmonstats_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
+	echo "Modem Monitoring" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
+
+	if [ "$(uname -o)" = "ASUSWRT-Merlin" ]; then
 	
-	if [ ! -f "/tmp/index_style.css" ]; then
-		cp -f "/www/index_style.css" "/tmp/"
+		if [ ! -f "/tmp/index_style.css" ]; then
+			cp -f "/www/index_style.css" "/tmp/"
+		fi
+		
+		if ! grep -q '.menu_Addons' /tmp/index_style.css ; then
+			echo ".menu_Addons { background: url(ext/shared-jy/addons.png); }" >> /tmp/index_style.css
+		fi
+		
+		umount /www/index_style.css 2>/dev/null
+		mount -o bind /tmp/index_style.css /www/index_style.css
+		
+		if [ ! -f "/tmp/menuTree.js" ]; then
+			cp -f "/www/require/modules/menuTree.js" "/tmp/"
+		fi
+		
+		sed -i "\\~$MyPage~d" /tmp/menuTree.js
+		
+		if ! grep -q 'menuName: "Addons"' /tmp/menuTree.js ; then
+			lineinsbefore="$(( $(grep -n "exclude:" /tmp/menuTree.js | cut -f1 -d':') - 1))"
+			sed -i "$lineinsbefore"'i,\n{\nmenuName: "Addons",\nindex: "menu_Addons",\ntab: [\n{url: "ext/shared-jy/redirect.htm", tabName: "Help & Support"},\n{url: "NULL", tabName: "__INHERIT__"}\n]\n}' /tmp/menuTree.js
+		fi
+		
+		if ! grep -q "javascript:window.open('/ext/shared-jy/redirect.htm'" /tmp/menuTree.js ; then
+			sed -i "s~ext/shared-jy/redirect.htm~javascript:window.open('/ext/shared-jy/redirect.htm','_blank')~" /tmp/menuTree.js
+		fi
+		sed -i "/url: \"javascript:window.open('\/ext\/shared-jy\/redirect.htm'/i {url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
+		umount /www/require/modules/menuTree.js 2>/dev/null
+		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 	fi
-	
-	if ! grep -q '.menu_Addons' /tmp/index_style.css ; then
-		echo ".menu_Addons { background: url(ext/shared-jy/addons.png); }" >> /tmp/index_style.css
-	fi
-	
-	umount /www/index_style.css 2>/dev/null
-	mount -o bind /tmp/index_style.css /www/index_style.css
-	
-	if [ ! -f "/tmp/menuTree.js" ]; then
-		cp -f "/www/require/modules/menuTree.js" "/tmp/"
-	fi
-	
-	sed -i "\\~$MyPage~d" /tmp/menuTree.js
-	
-	if ! grep -q 'menuName: "Addons"' /tmp/menuTree.js ; then
-		lineinsbefore="$(( $(grep -n "exclude:" /tmp/menuTree.js | cut -f1 -d':') - 1))"
-		sed -i "$lineinsbefore"'i,\n{\nmenuName: "Addons",\nindex: "menu_Addons",\ntab: [\n{url: "ext/shared-jy/redirect.htm", tabName: "Help & Support"},\n{url: "NULL", tabName: "__INHERIT__"}\n]\n}' /tmp/menuTree.js
-	fi
-	
-	if ! grep -q "javascript:window.open('/ext/shared-jy/redirect.htm'" /tmp/menuTree.js ; then
-		sed -i "s~ext/shared-jy/redirect.htm~javascript:window.open('/ext/shared-jy/redirect.htm','_blank')~" /tmp/menuTree.js
-	fi
-	sed -i "/url: \"javascript:window.open('\/ext\/shared-jy\/redirect.htm'/i {url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
-	umount /www/require/modules/menuTree.js 2>/dev/null
-	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
+}
+
+OutputDataMode(){
+	case "$1" in
+		raw)
+			sed -i 's/^OUTPUTDATAMODE.*$/OUTPUTDATAMODE=raw/' "$SCRIPT_CONF"
+			Generate_CSVs
+		;;
+		average)
+			sed -i 's/^OUTPUTDATAMODE.*$/OUTPUTDATAMODE=average/' "$SCRIPT_CONF"
+			Generate_CSVs
+		;;
+		check)
+			OUTPUTDATAMODE=$(grep "OUTPUTDATAMODE" "$SCRIPT_CONF" | cut -f2 -d"=")
+			echo "$OUTPUTDATAMODE"
+		;;
+	esac
+}
+
+OutputTimeMode(){
+	case "$1" in
+		unix)
+			sed -i 's/^OUTPUTTIMEMODE.*$/OUTPUTTIMEMODE=unix/' "$SCRIPT_CONF"
+			Generate_CSVs
+		;;
+		non-unix)
+			sed -i 's/^OUTPUTTIMEMODE.*$/OUTPUTTIMEMODE=non-unix/' "$SCRIPT_CONF"
+			Generate_CSVs
+		;;
+		check)
+			OUTPUTTIMEMODE=$(grep "OUTPUTTIMEMODE" "$SCRIPT_CONF" | cut -f2 -d"=")
+			echo "$OUTPUTTIMEMODE"
+		;;
+	esac
 }
 
 WriteStats_ToJS(){
@@ -395,18 +440,13 @@ WriteStats_ToJS(){
 #$1 fieldname $2 tablename $3 frequency (hours) $4 length (days) $5 outputfile $6 outputfrequency $7 sqlfile $8 timestamp
 WriteSql_ToFile(){
 	timenow="$8"
-	earliest="$((24*$4/$3))"
-	{
-		echo ".mode list"
-		echo "select count(distinct ChannelNum) from modstats_$metric WHERE [Timestamp] >= ($timenow - ((60*60*$3)*$earliest));"
-	} > "$7"
-	
-	channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < "$7")"
-	rm -f "$7"
+	maxcount="$(echo "$3" "$4" | awk '{printf ((24*$2)/$1)}')"
+	multiplier="$(echo "$3" | awk '{printf (60*60*$1)}')"
 	
 	{
 		echo ".mode csv"
-		echo ".output $5$6.tmp"
+		echo ".headers on"
+		echo ".output $5$6.htm"
 	} >> "$7"
 	
 	dividefactor=1
@@ -414,59 +454,28 @@ WriteSql_ToFile(){
 		dividefactor=10
 	fi
 	
-	channelcounter=1
-	until [ $channelcounter -gt "$channelcount" ]; do
-		{
-			echo "SELECT 'Ch. ' || [ChannelNum],Min([Timestamp]) ChunkStart, IFNULL(Avg([Measurement])/$dividefactor,'NaN') Value FROM"
-			echo "( SELECT NTILE($((24*$4/$3))) OVER (ORDER BY [Timestamp]) Chunk, * FROM $2 WHERE [Timestamp] >= ($timenow - ((60*60*$3)*$earliest)) AND [ChannelNum] = $channelcounter ) AS T"
-			echo "GROUP BY Chunk"
-			echo "ORDER BY ChunkStart;"
-		} >> "$7"
-		channelcounter=$((channelcounter + 1))
-	done
-	echo "var $metric$6""size = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
+	echo "SELECT 'Ch. ' || [ChannelNum] Channel, Min([Timestamp]) Time, IFNULL(Avg([$1])/$dividefactor,'NaN') Value FROM $2 WHERE ([Timestamp] >= $timenow - ($multiplier*$maxcount)) GROUP BY ([Timestamp]/($multiplier));" >> "$7"
 }
 
-Aggregate_Stats(){
-	metricname="$1"
-	period="$2"
-	sed -i '1iChannelNum,Time,Value' "$CSV_OUTPUT_DIR/$metricname$period.tmp"
-	head -c -2 "$CSV_OUTPUT_DIR/$metricname$period.tmp" > "$CSV_OUTPUT_DIR/$metricname$period.htm"
-	dos2unix "$CSV_OUTPUT_DIR/$metricname$period.htm"
-	cp "$CSV_OUTPUT_DIR/$metricname$period.htm" "$CSV_OUTPUT_DIR/$metricname$period.tmp"
-	sed -i '1d' "$CSV_OUTPUT_DIR/$metricname$period.tmp"
-	min="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metricname$period.tmp" | sort -n | head -1)"
-	max="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metricname$period.tmp" | sort -n | tail -1)"
-	avg="$(cut -f3 -d"," "$CSV_OUTPUT_DIR/$metricname$period.tmp" | sort -n | awk '{ total += $1; count++ } END { print total/count }')"
-	{
-	echo "var $metricname$period""min = $min;"
-	echo "var $metricname$period""max = $max;"
-	echo "var $metricname$period""avg = $avg;"
-	} >> "$SCRIPT_DIR/modstatsdata.js"
-}
-
-Generate_Stats(){
+Get_Modem_Stats(){
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Create_Dirs
 	Create_Symlinks
+	Conf_Exists
 	
 	TZ=$(cat /etc/TZ)
 	export TZ
-	timestamp="$(date '+%s')"
-	timetitle="$(date +"%c")"
+	timenow="$(date '+%s')"
+	timenowfriendly="$(date +"%c")"
 	shstatsfile="/tmp/shstats.csv"
 	
 	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 	
 	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 	
-	if [ "$(wc -l < /tmp/shstats.csv )" -gt 1 ]; then
-		rm -f "$SCRIPT_DIR/modstatsdata.js"
-		rm -f "$CSV_OUTPUT_DIR/"*
-		rm -f /tmp/modmon-stats.sql
-		
+	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
 		for metric in $metriclist; do
 		{
 			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] REAL NOT NULL);" >> /tmp/modmon-stats.sql
@@ -476,69 +485,123 @@ Generate_Stats(){
 			counter=1
 			until [ $counter -gt "$channelcount" ]; do
 				measurement="$(grep "$metric" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
-				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timestamp,$counter,$measurement);" >> /tmp/modmon-stats.sql
+				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$counter,$measurement);" >> /tmp/modmon-stats.sql
 				counter=$((counter + 1))
 			done
+			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			rm -f /tmp/modmon-stats.sql
+			
+			echo "DELETE FROM [modstats_$metric] WHERE [Timestamp] < ($timenow - (86400*30));" > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 		}
 		done
 		
-		for metric in $metriclist; do
+		Generate_CSVs
+		
+		echo "Superhub stats retrieved on $timenowfriendly" > "/tmp/modstatstitle.txt"
+		WriteStats_ToJS "/tmp/modstatstitle.txt" "$SCRIPT_DIR/modstatstext.js" "SetModStatsTitle" "statstitle"
+		Print_Output "false" "Superhub stats successfully retrieved" "$PASS"
+		
+		rm -f /tmp/modmon-stats.sql
+		rm -f /tmp/modstatstitle.txt
+	else
+		Print_Output "true" "Something went wrong trying to retrieve Superhub stats" "$ERR"
+	fi
+	
+	rm -f "$shstatsfile"
+}
+
+Generate_CSVs(){
+	OUTPUTDATAMODE="$(OutputDataMode "check")"
+	OUTPUTTIMEMODE="$(OutputTimeMode "check")"
+	TZ=$(cat /etc/TZ)
+	export TZ
+	timenow="$(date '+%s')"
+	timenowfriendly="$(date +"%c")"
+	
+	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+	
+	for metric in $metriclist; do
+	{
 		{
+			echo ".mode list"
+			echo "select count(distinct ChannelNum) from modstats_$metric WHERE [Timestamp] >= ($timenow - 86400);"
+		} > /tmp/modmon-stats.sql
+		
+		channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql)"
+		rm -f /tmp/modmon-stats.sql
+		
+		{
+			echo ".mode csv"
+			echo ".output $CSV_OUTPUT_DIR/$metric""daily.tmp"
+		} > /tmp/modmon-stats.sql
+		
+		dividefactor=1
+		if echo "$metric" | grep -qF "RxPwr" || echo "$metric" | grep -qF "RxSnr" ; then
+			dividefactor=10
+		fi
+		
+		echo "SELECT 'Ch. ' || [ChannelNum] Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= $timenow - 86400);" >> /tmp/modmon-stats.sql
+		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+		rm -f /tmp/modmon-stats.sql
+		
+		if [ "$OUTPUTDATAMODE" = "raw" ]; then
 			{
-				echo ".mode list"
-				echo "select count(distinct ChannelNum) from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400);"
+				echo ".mode csv"
+				echo ".headers on"
+				echo ".output $CSV_OUTPUT_DIR/$metric""weekly"".htm"
+				echo "SELECT 'Ch. ' || [ChannelNum] Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value from modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*7);"
 			} > /tmp/modmon-stats.sql
-			
-			channelcount="$("$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql)"
+			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 			
 			{
 				echo ".mode csv"
-				echo ".output $CSV_OUTPUT_DIR/$metric""daily.tmp"
+				echo ".headers on"
+				echo ".output $CSV_OUTPUT_DIR/$metric""monthly"".htm"
+				echo "select SELECT 'Ch. ' || [ChannelNum] Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value from modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*30);"
 			} > /tmp/modmon-stats.sql
-			
-			dividefactor=1
-			if echo "$metric" | grep -qF "RxPwr" || echo "$metric" | grep -qF "RxSnr" ; then
-				dividefactor=10
-			fi
-			
-			counter=1
-			until [ $counter -gt "$channelcount" ]; do
-				echo "select 'Ch. ' || [ChannelNum],[Timestamp],[Measurement]/$dividefactor from modstats_$metric WHERE [Timestamp] >= ($timestamp - 86400) AND [ChannelNum] = $counter;" >> /tmp/modmon-stats.sql
-				counter=$((counter + 1))
-			done
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			echo "var $metric""dailysize = $channelcount;" >> "$SCRIPT_DIR/modstatsdata.js"
-			Aggregate_Stats "$metric" "daily"
-			rm -f "$CSV_OUTPUT_DIR/$metric""daily.tmp"*
+			rm -f /tmp/modmon-stats.sql
+		elif [ "$OUTPUTDATAMODE" = "average" ]; then
+			WriteSql_ToFile "Measurement" "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric" "weekly" "/tmp/modmon-stats.sql" "$timenow"
+			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 			
-			WriteSql_ToFile "Measurement" "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric" "weekly" "/tmp/modmon-stats.sql" "$timestamp"
+			WriteSql_ToFile "Measurement" "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric" "monthly" "/tmp/modmon-stats.sql" "$timenow"
 			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			Aggregate_Stats "$metric" "weekly"
-			rm -f "$CSV_OUTPUT_DIR/$metric""weekly.tmp"
 			rm -f /tmp/modmon-stats.sql
-			
-			WriteSql_ToFile "Measurement" "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric" "monthly" "/tmp/modmon-stats.sql" "$timestamp"
-			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			Aggregate_Stats "$metric" "monthly"
-			rm -f "$CSV_OUTPUT_DIR/$metric""monthly.tmp"
-			rm -f /tmp/modmon-stats.sql
-		}
+		fi
+	}
+	done
+	
+	rm -f /tmp/modmon-stats.sql
+	
+	dos2unix "$CSV_OUTPUT_DIR/"*.htm
+	
+	tmpoutputdir="/tmp/""$SCRIPT_NAME_LOWER""results"
+	mkdir -p "$tmpoutputdir"
+	cp "$CSV_OUTPUT_DIR/"*.htm "$tmpoutputdir/."
+
+	if [ "$OUTPUTTIMEMODE" = "unix" ]; then
+		find "$tmpoutputdir/" -name '*.htm' -exec sh -c 'i="$1"; mv -- "$i" "${i%.htm}.csv"' _ {} \;
+	elif [ "$OUTPUTTIMEMODE" = "non-unix" ]; then
+		for i in "$tmpoutputdir/"*".htm"; do
+			awk -F"," 'NR==1 {OFS=","; print} NR>1 {OFS=","; $2=strftime("%Y-%m-%d %H:%M:%S", $2); print }' "$i" > "$i.out"
 		done
 		
-		echo "Superhub stats retrieved on $timetitle" > "/tmp/modstatstitle.txt"
-		WriteStats_ToJS "/tmp/modstatstitle.txt" "$SCRIPT_DIR/modstatstext.js" "SetModStatsTitle" "statstitle"
-		Print_Output "false" "Superhub stats successfully retrieved" "$PASS"
-	else
-		Print_Output "true" "Something went wrong trying to retrieve Superhub stats" "$ERR"
+		find "$tmpoutputdir/" -name '*.htm.out' -exec sh -c 'i="$1"; mv -- "$i" "${i%.htm.out}.csv"' _ {} \;
+		rm -f "$tmpoutputdir/"*.htm
 	fi
-	rm -f "/tmp/modmon-stats.sql"
-	rm -f "/tmp/modstatstitle.txt"
-	rm -f "/tmp/modmon-"*".csv"
-	rm -f "$shstatsfile"
+	
+	if [ ! -f /opt/bin/7z ]; then
+		opkg update
+		opkg install p7zip
+	fi
+	/opt/bin/7z a -y -bsp0 -bso0 -tzip "/tmp/""$SCRIPT_NAME_LOWER""data.zip" "$tmpoutputdir/*"
+	mv "/tmp/""$SCRIPT_NAME_LOWER""data.zip" "$CSV_OUTPUT_DIR"
+	rm -rf "$tmpoutputdir"
 }
 
 Shortcut_script(){
@@ -590,7 +653,11 @@ ScriptHeader(){
 }
 
 MainMenu(){
+	OUTPUTDATAMODE_MENU="$(OutputDataMode "check")"
+	OUTPUTTIMEMODE_MENU="$(OutputTimeMode "check")"
 	printf "1.    Check stats now\\n\\n"
+	printf "2.    Toggle data output mode\\n      Currently \\e[1m%s\\e[0m values will be used for weekly and monthly charts\\n\\n" "$OUTPUTDATAMODE_MENU"
+	printf "3.    Toggle time output mode\\n      Currently \\e[1m%s\\e[0m time values will be used for CSV exports\\n\\n" "$OUTPUTTIMEMODE_MENU"
 	printf "u.    Check for updates\\n"
 	printf "uf.   Update %s with latest version (force update)\\n\\n" "$SCRIPT_NAME"
 	printf "e.    Exit %s\\n\\n" "$SCRIPT_NAME"
@@ -609,6 +676,20 @@ MainMenu(){
 					Menu_GenerateStats
 				fi
 				PressEnter
+				break
+			;;
+			2)
+				printf "\\n"
+				if Check_Lock "menu"; then
+					Menu_ToggleOutputDataMode
+				fi
+				break
+			;;
+			3)
+				printf "\\n"
+				if Check_Lock "menu"; then
+					Menu_ToggleOutputTimeMode
+				fi
 				break
 			;;
 			u)
@@ -673,8 +754,9 @@ Check_Requirements(){
 		CHECKSFAILED="true"
 	fi
 	
-	if ! Firmware_Version_Check "install" ; then
-		Print_Output "true" "Older Merlin firmware detected - $SCRIPT_NAME requires 384.13_4/384.15 or later" "$ERR"
+	if ! Firmware_Version_Check; then
+		Print_Output "true" "Unsupported firmware version detected" "$ERR"
+		Print_Output "true" "$SCRIPT_NAME requires Merlin 384.15/384.13_4 or Fork 43E5 (or later)" "$ERR"
 		CHECKSFAILED="true"
 	fi
 		
@@ -682,6 +764,7 @@ Check_Requirements(){
 		Print_Output "true" "Installing required packages from Entware" "$PASS"
 		opkg update
 		opkg install sqlite3-cli
+		opkg install p7zip
 		return 0
 	else
 		return 1
@@ -704,6 +787,7 @@ Menu_Install(){
 	
 	Create_Dirs
 	Create_Symlinks
+	Conf_Exists
 	
 	Update_File "modmonstats_www.asp"
 	Update_File "shared-jy.tar.gz"
@@ -723,12 +807,31 @@ Menu_Startup(){
 	Shortcut_script create
 	Create_Dirs
 	Create_Symlinks
+	Conf_Exists
 	Mount_WebUI
 	Clear_Lock
 }
 
 Menu_GenerateStats(){
 	Generate_Stats
+	Clear_Lock
+}
+
+Menu_ToggleOutputDataMode(){
+	if [ "$(OutputDataMode "check")" = "raw" ]; then
+		OutputDataMode "average"
+	elif [ "$(OutputDataMode "check")" = "average" ]; then
+		OutputDataMode "raw"
+	fi
+	Clear_Lock
+}
+
+Menu_ToggleOutputTimeMode(){
+	if [ "$(OutputTimeMode "check")" = "unix" ]; then
+		OutputTimeMode "non-unix"
+	elif [ "$(OutputTimeMode "check")" = "non-unix" ]; then
+		OutputTimeMode "unix"
+	fi
 	Clear_Lock
 }
 
@@ -778,6 +881,7 @@ Menu_Uninstall(){
 if [ -z "$1" ]; then
 	Create_Dirs
 	Create_Symlinks
+	Conf_Exists
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
@@ -808,6 +912,12 @@ case "$1" in
 		fi
 		exit 0
 	;;
+	outputcsv)
+		Check_Lock
+		Generate_CSVs
+		Clear_Lock
+		exit 0
+	;;
 	update)
 		Check_Lock
 		Menu_Update
@@ -821,6 +931,20 @@ case "$1" in
 	uninstall)
 		Check_Lock
 		Menu_Uninstall
+		exit 0
+	;;
+	develop)
+		Check_Lock
+		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="develop"/' "/jffs/scripts/$SCRIPT_NAME_LOWER"
+		Clear_Lock
+		exec "$0" "update"
+		exit 0
+	;;
+	stable)
+		Check_Lock
+		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="master"/' "/jffs/scripts/$SCRIPT_NAME_LOWER"
+		Clear_Lock
+		exec "$0" "update"
 		exit 0
 	;;
 	*)
