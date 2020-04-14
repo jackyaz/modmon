@@ -813,7 +813,7 @@ Menu_Startup(){
 }
 
 Menu_GenerateStats(){
-	Generate_Stats
+	Get_Modem_Stats
 	Clear_Lock
 }
 
