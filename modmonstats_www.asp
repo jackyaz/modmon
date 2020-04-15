@@ -450,18 +450,18 @@ function GetMaxChannels(){
 	var TxCountArray = [];
 	for(i = 0; i < metriclist.length; i++){
 		for (i2 = 0; i2 < chartlist.length; i2++) {
-			varname=metriclist[i]+chartlist[i2]+"size";
-			var objdataname=window[varname];
+			var varname="LineChart"+metriclist[i]+chartlist[i2];
+			var channelcount=window[varname].data.datasets.length;
 			if(varname.indexOf("Rx") != -1){
-				RxCountArray.push(objdataname);
+				RxCountArray.push(channelcount);
 			}
 			else {
-				TxCountArray.push(objdataname);
+				TxCountArray.push(channelcount);
 			}
 		}
 	}
-	RxCount = Array.max(RxCountArray);
-	TxCount = Array.max(TxCountArray);
+	RxCount = Math.max.apply(Math, RxCountArray);
+	TxCount = Math.max.apply(Math, TxCountArray);
 }
 
 function ToggleLines() {
@@ -498,7 +498,7 @@ function RedrawAllCharts() {
 			counter++;
 		}
 	}
-	loadCSV+='});';
+	loadCSV+='}).then(function(){GetMaxChannels();$j("#table_buttons2").after(BuildChannelFilterTable());AddEventHandlers();});';
 	eval(loadCSV);
 }
 
@@ -534,9 +534,6 @@ function initial(){
 	metriclist.reverse();
 	titlelist.reverse();
 	
-	//$j("#table_buttons2").after(BuildChannelFilterTable());
-	
-	AddEventHandlers();
 	RedrawAllCharts();
 	SetModStatsTitle();
 }
