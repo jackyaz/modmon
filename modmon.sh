@@ -65,7 +65,7 @@ Check_Lock(){
 			echo "$$" > "/tmp/$SCRIPT_NAME.lock"
 			return 0
 		else
-			Print_Output "true" "Lock file found (age: $ageoflock seconds) - modem stat generation likely in progress" "$ERR"
+			Print_Output "true" "Lock file found (age: $ageoflock seconds) - cable modem stat generation likely in progress" "$ERR"
 			if [ -z "$1" ]; then
 				exit 1
 			else
@@ -358,7 +358,7 @@ Mount_WebUI(){
 	fi
 	Print_Output "true" "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 	cp -f "$SCRIPT_DIR/modmonstats_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
-	echo "Modem Monitoring" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
+	echo "Cable Modem Stats" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	
 	if [ "$(uname -o)" = "ASUSWRT-Merlin" ]; then
 	
@@ -387,7 +387,7 @@ Mount_WebUI(){
 		if ! grep -q "javascript:window.open('/ext/shared-jy/redirect.htm'" /tmp/menuTree.js ; then
 			sed -i "s~ext/shared-jy/redirect.htm~javascript:window.open('/ext/shared-jy/redirect.htm','_blank')~" /tmp/menuTree.js
 		fi
-		sed -i "/url: \"javascript:window.open('\/ext\/shared-jy\/redirect.htm'/i {url: \"$MyPage\", tabName: \"Modem Monitoring\"}," /tmp/menuTree.js
+		sed -i "/url: \"javascript:window.open('\/ext\/shared-jy\/redirect.htm'/i {url: \"$MyPage\", tabName: \"Cable Modem Stats\"}," /tmp/menuTree.js
 		umount /www/require/modules/menuTree.js 2>/dev/null
 		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 	fi
@@ -501,14 +501,14 @@ Get_Modem_Stats(){
 		
 		Generate_CSVs
 		
-		echo "Superhub stats retrieved on $timenowfriendly" > "/tmp/modstatstitle.txt"
+		echo "Cable modem stats retrieved on $timenowfriendly" > "/tmp/modstatstitle.txt"
 		WriteStats_ToJS "/tmp/modstatstitle.txt" "$SCRIPT_DIR/modstatstext.js" "SetModStatsTitle" "statstitle"
-		Print_Output "false" "Superhub stats successfully retrieved" "$PASS"
+		Print_Output "false" "Cable modem stats successfully retrieved" "$PASS"
 		
 		rm -f /tmp/modmon-stats.sql
 		rm -f /tmp/modstatstitle.txt
 	else
-		Print_Output "true" "Something went wrong trying to retrieve Superhub stats" "$ERR"
+		Print_Output "true" "Something went wrong trying to retrieve cable modem stats" "$ERR"
 	fi
 	
 	rm -f "$shstatsfile"
@@ -741,7 +741,7 @@ Check_Requirements(){
 		Print_Output "true" "Custom JFFS Scripts enabled" "$WARN"
 	fi
 	
-	/usr/sbin/curl -fsL --retry 3 "http://192.168.100.1/getRouterStatus" >/dev/null || { Print_Output "true" "Modem not compatible - error detected when trying to access modem's stats" "$ERR"; CHECKSFAILED="true"; }
+	/usr/sbin/curl -fsL --retry 3 "http://192.168.100.1/getRouterStatus" >/dev/null || { Print_Output "true" "Cable modem not compatible - error detected when trying to access cable modem's stats" "$ERR"; CHECKSFAILED="true"; }
 	
 	if [ ! -f "/opt/bin/opkg" ]; then
 		Print_Output "true" "Entware not detected!" "$ERR"
