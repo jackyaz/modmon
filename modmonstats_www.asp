@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="-1">
 <link rel="shortcut icon" href="images/favicon.png">
 <link rel="icon" href="images/favicon.png">
-<title>Modem Monitoring</title>
+<title>Cable Modem Stats</title>
 <link rel="stylesheet" type="text/css" href="index_style.css">
 <link rel="stylesheet" type="text/css" href="form_style.css">
 <style>
@@ -841,7 +841,7 @@ function AddEventHandlers(){
 <tr bgcolor="#4D595D">
 <td valign="top">
 <div>&nbsp;</div>
-<div class="formfonttitle" id="statstitle">Superhub 3 Stats</div>
+<div class="formfonttitle" id="statstitle">Cable Modem Stats</div>
 <table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
 <tr class="apply_gen" valign="top" height="35px" id="row_buttons">
 <td style="background-color:rgb(77, 89, 93);border:0px;">
