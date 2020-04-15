@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/jackyaz/modmon.svg?branch=master)](https://travis-ci.com/jackyaz/modmon)
 
 ## v1.0.0
-### Updated on 2020-04-14
+### Updated on 2020-04-15
 ## About
 Track your Hub 3.0's stats (such as signal power levels), on your router. Graphs available on the Addons page of the WebUI.
 
@@ -42,7 +42,7 @@ If this does not work, you will need to use the full path:
 Launch modmon and select option u
 
 ## Help
-Please post about any issues and problems here: [modmon on SNBForums](https://www.snbforums.com/threads/beta-modmon-webui-for-monitoring-virgin-media-hub-3-0-stats.61363/)
+Please post about any issues and problems here: [modmon on SNBForums](https://www.snbforums.com/threads/modmon-webui-for-monitoring-virgin-media-hub-3-0-stats.61363/)
 
 ## FAQs
 ### I haven't used scripts before on AsusWRT-Merlin
