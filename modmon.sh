@@ -240,7 +240,7 @@ Conf_Exists(){
 		return 0
 	else
 		{
-		echo "OUTPUTDATAMODE=raw"
+		echo "OUTPUTDATAMODE=average"
 		echo "OUTPUTTIMEMODE=unix"
 		} > "$SCRIPT_CONF"
 		return 1
