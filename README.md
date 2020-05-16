@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/jackyaz/modmon.svg?branch=master)](https://travis-ci.com/jackyaz/modmon)
 
 ## v1.0.1
-### Updated on 2020-04-21
+### Updated on 2020-05-16
 ## About
 Track your cable modem's stats (such as signal power levels), on your router. Graphs available on the Addons page of the WebUI.
 Currently only the Virgin Media Hub 3.0 is supported.
