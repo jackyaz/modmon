@@ -687,7 +687,7 @@ function BuildChannelFilterRow(rxtx,title,channelcount){
 	var channelhtml='';
 	channelhtml+='<div style="line-height:10px;">&nbsp;</div>';
 	channelhtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_'+rxtx+'">';
-	channelhtml+='<thead id="channel_table_downstream">';
+	channelhtml+='<thead id="channel_table_'+rxtx+'stream">';
 	channelhtml+='<tr><td colspan="12">'+title+'</td></tr>';
 	channelhtml+='</thead>';
 	channelhtml+='<tr>';
