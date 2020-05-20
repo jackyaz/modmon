@@ -2,8 +2,8 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/jackyaz/modmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jackyaz/modmon&amp;utm_campaign=Badge_Grade)
 [![Build Status](https://travis-ci.com/jackyaz/modmon.svg?branch=master)](https://travis-ci.com/jackyaz/modmon)
 
-## v1.0.0
-### Updated on 2020-04-15
+## v1.0.1
+### Updated on 2020-05-20
 ## About
 Track your cable modem's stats (such as signal power levels), on your router. Graphs available on the Addons page of the WebUI.
 Currently only the Virgin Media Hub 3.0 is supported.

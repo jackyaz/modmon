@@ -14,7 +14,7 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v1.0.0"
+readonly SCRIPT_VERSION="v1.0.1"
 readonly SCRIPT_BRANCH="master"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/""$SCRIPT_NAME""/""$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -574,7 +574,7 @@ Generate_CSVs(){
 	
 	dos2unix "$CSV_OUTPUT_DIR/"*.htm
 	
-	tmpoutputdir="/tmp/""$SCRIPT_NAME_LOWER""results"
+	tmpoutputdir="/tmp/""$SCRIPT_NAME""results"
 	mkdir -p "$tmpoutputdir"
 	cp "$CSV_OUTPUT_DIR/"*.htm "$tmpoutputdir/."
 
@@ -929,14 +929,14 @@ case "$1" in
 	;;
 	develop)
 		Check_Lock
-		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="develop"/' "/jffs/scripts/$SCRIPT_NAME_LOWER"
+		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="develop"/' "/jffs/scripts/$SCRIPT_NAME"
 		Clear_Lock
 		exec "$0" "update"
 		exit 0
 	;;
 	stable)
 		Check_Lock
-		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="master"/' "/jffs/scripts/$SCRIPT_NAME_LOWER"
+		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="master"/' "/jffs/scripts/$SCRIPT_NAME"
 		Clear_Lock
 		exec "$0" "update"
 		exit 0
