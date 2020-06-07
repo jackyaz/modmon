@@ -893,6 +893,7 @@ case "$1" in
 	;;
 	startup)
 		Check_Lock
+		sleep 10
 		Menu_Startup
 		exit 0
 	;;
