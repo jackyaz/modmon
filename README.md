@@ -1,18 +1,15 @@
-# modmon - cable modem stats for AsusWRT Merlin - with graphs
+# modmon
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/jackyaz/modmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jackyaz/modmon&amp;utm_campaign=Badge_Grade)
 [![Build Status](https://travis-ci.com/jackyaz/modmon.svg?branch=master)](https://travis-ci.com/jackyaz/modmon)
 
 ## v1.1.0
-### Updated on 2020-05-21
+### Updated on 2020-10-21
 ## About
-Track your cable modem's stats (such as signal power levels), on your router. Graphs available on the Addons page of the WebUI.
+modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries.
+
 Currently only the Virgin Media Hub 3.0 is supported.
 
 modmon is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
-
-![Menu UI](https://puu.sh/F4nHO/2cb4951f2d.png)
-
-![Graph example](https://puu.sh/F4nIz/4b076a1e1a.png)
 
 ### Supporting development
 Love the script and want to support future development? Any and all donations gratefully received!
@@ -32,6 +29,10 @@ Using your preferred SSH client/terminal, copy and paste the following command, 
 ```
 
 ## Usage
+### WebUI
+Modmon can be configured via the WebUI, in the Addons section.
+
+### Command Line
 To launch the modmon menu after installation, use:
 ```sh
 modmon
@@ -42,8 +43,12 @@ If this does not work, you will need to use the full path:
 /jffs/scripts/modmon
 ```
 
-## Updating
-Launch modmon and select option u
+## Screenshots
+
+![WebUI](https://puu.sh/F4nIz/4b076a1e1a.png)
+
+![CLI UI](https://puu.sh/F4nHO/2cb4951f2d.png)
+
 
 ## Help
 Please post about any issues and problems here: [modmon on SNBForums](https://www.snbforums.com/threads/modmon-webui-for-monitoring-cable-modem-stats.61363/)
