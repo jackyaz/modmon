@@ -733,13 +733,10 @@ ScriptHeader(){
 }
 
 MainMenu(){
-	OUTPUTDATAMODE_MENU="$(OutputDataMode "check")"
-	OUTPUTTIMEMODE_MENU="$(OutputTimeMode "check")"
-	SCRIPTSTORAGE_MENU="$(ScriptStorageLocation "check")"
 	printf "1.    Check stats now\\n\\n"
-	printf "2.    Toggle data output mode\\n      Currently \\e[1m%s\\e[0m values will be used for weekly and monthly charts\\n\\n" "$OUTPUTDATAMODE_MENU"
-	printf "3.    Toggle time output mode\\n      Currently \\e[1m%s\\e[0m time values will be used for CSV exports\\n\\n" "$OUTPUTTIMEMODE_MENU"
-	printf "s.    Toggle storage location for stats and config\\n      Current location is \\e[1m%s\\e[0m \\n\\n" "$SCRIPTSTORAGE_MENU"
+	printf "2.    Toggle data output mode\\n      Currently \\e[1m%s\\e[0m values will be used for weekly and monthly charts\\n\\n" "$(OutputDataMode "check")"
+	printf "3.    Toggle time output mode\\n      Currently \\e[1m%s\\e[0m time values will be used for CSV exports\\n\\n" "$(OutputTimeMode "check")"
+	printf "s.    Toggle storage location for stats and config\\n      Current location is \\e[1m%s\\e[0m \\n\\n" "$(ScriptStorageLocation "check")"
 	printf "u.    Check for updates\\n"
 	printf "uf.   Update %s with latest version (force update)\\n\\n" "$SCRIPT_NAME"
 	printf "e.    Exit %s\\n\\n" "$SCRIPT_NAME"
