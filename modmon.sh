@@ -762,23 +762,17 @@ MainMenu(){
 			;;
 			2)
 				printf "\\n"
-				if Check_Lock "menu"; then
-					Menu_ToggleOutputDataMode
-				fi
+				Menu_ToggleOutputDataMode
 				break
 			;;
 			3)
 				printf "\\n"
-				if Check_Lock "menu"; then
-					Menu_ToggleOutputTimeMode
-				fi
+				Menu_ToggleOutputTimeMode
 				break
 			;;
 			s)
 				printf "\\n"
-				if Check_Lock "menu"; then
-					Menu_ToggleStorageLocation
-				fi
+				Menu_ToggleStorageLocation
 				break
 			;;
 			u)
@@ -916,7 +910,6 @@ Menu_ToggleOutputDataMode(){
 	elif [ "$(OutputDataMode "check")" = "average" ]; then
 		OutputDataMode "raw"
 	fi
-	Clear_Lock
 }
 
 Menu_ToggleOutputTimeMode(){
@@ -925,7 +918,6 @@ Menu_ToggleOutputTimeMode(){
 	elif [ "$(OutputTimeMode "check")" = "non-unix" ]; then
 		OutputTimeMode "unix"
 	fi
-	Clear_Lock
 }
 
 Menu_ToggleStorageLocation(){
@@ -936,7 +928,6 @@ Menu_ToggleStorageLocation(){
 		ScriptStorageLocation "jffs"
 		Create_Symlinks
 	fi
-	Clear_Lock
 }
 
 Menu_Update(){
@@ -1083,59 +1074,46 @@ case "$1" in
 		Menu_GenerateStats
 		exit 0
 	;;
-	service_event)
-		if [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME" ]; then
-			Check_Lock
-			Menu_GenerateStats
-			exit 0
-		elif [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME""checkupdate" ]; then
-			Check_Lock
-			updatecheckresult="$(Update_Check)"
-			Clear_Lock
-			exit 0
-		elif [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME""doupdate" ]; then
-			Check_Lock
-			Update_Version "force" "unattended"
-			Clear_Lock
-			exit 0
-		fi
-		exit 0
-	;;
 	outputcsv)
 		Check_Lock
 		Generate_CSVs
 		Clear_Lock
 		exit 0
 	;;
+	service_event)
+		if [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME" ]; then
+			Menu_GenerateStats
+			exit 0
+		elif [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME""checkupdate" ]; then
+			updatecheckresult="$(Update_Check)"
+			exit 0
+		elif [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME""doupdate" ]; then
+			Update_Version "force" "unattended"
+			exit 0
+		fi
+		exit 0
+	;;
 	update)
-		Check_Lock
 		Menu_Update
 		Update_Version "unattended"
-		Clear_Lock
 		exit 0
 	;;
 	forceupdate)
-		Check_Lock
 		Menu_ForceUpdate
 		Update_Version "force" "unattended"
-		Clear_Lock
 		exit 0
 	;;
 	setversion)
-		Check_Lock
 		Set_Version_Custom_Settings "local"
 		Set_Version_Custom_Settings "server" "$SCRIPT_VERSION"
-		Clear_Lock
 		if [ -z "$2" ]; then
 			exec "$0"
 		fi
 		exit 0
 	;;
 	checkupdate)
-		Check_Lock
 		#shellcheck disable=SC2034
 		updatecheckresult="$(Update_Check)"
-		Clear_Lock
 		exit 0
 	;;
 	uninstall)
@@ -1144,23 +1122,17 @@ case "$1" in
 		exit 0
 	;;
 	develop)
-		Check_Lock
 		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="develop"/' "/jffs/scripts/$SCRIPT_NAME"
-		Clear_Lock
 		exec "$0" "update"
 		exit 0
 	;;
 	stable)
-		Check_Lock
 		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="master"/' "/jffs/scripts/$SCRIPT_NAME"
-		Clear_Lock
 		exec "$0" "update"
 		exit 0
 	;;
 	*)
-		Check_Lock
 		echo "Command not recognised, please try again"
-		Clear_Lock
 		exit 1
 	;;
 esac
