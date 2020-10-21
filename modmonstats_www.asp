@@ -609,6 +609,22 @@ function SetCookie(cookiename,cookievalue){
 	cookie.set("mod_"+cookiename, cookievalue, 31);
 }
 
+$j.fn.serializeObject = function(){
+	var o = custom_settings;
+	var a = this.serializeArray();
+	$j.each(a, function(){
+		if (o[this.name] !== undefined && this.name.indexOf("modmon") != -1 && this.name.indexOf("version") == -1){
+			if (!o[this.name].push){
+				o[this.name] = [o[this.name]];
+			}
+			o[this.name].push(this.value || '');
+		} else if (this.name.indexOf("modmon") != -1 && this.name.indexOf("version") == -1){
+			o[this.name] = this.value || '';
+		}
+	});
+	return o;
+};
+
 function SetCurrentPage(){
 	document.form.next_page.value = window.location.pathname.substring(1);
 	document.form.current_page.value = window.location.pathname.substring(1);
@@ -618,21 +634,20 @@ function initial(){
 	SetCurrentPage();
 	LoadCustomSettings();
 	show_menu();
-	metriclist.reverse();
-	titlelist.reverse();
+	get_conf_file();
+	$j("#Time_Format").val(GetCookie("Time_Format","number"));
+	ScriptUpdateLayout();
+	SetModStatsTitle();
+	
+	var metrictablehtml="";
 	
 	for (i = 0; i < metriclist.length; i++){
-		$j("#table_buttons2").after(BuildMetricTable(metriclist[i],titlelist[i]));
+		metrictablehtml += BuildMetricTable(metriclist[i],titlelist[i],i);
 	}
 	
-	metriclist.reverse();
-	titlelist.reverse();
+	$j("#table_buttons2").after(metrictablehtml);
 	
 	RedrawAllCharts();
-	
-	ScriptUpdateLayout();
-	$j("#Time_Format").val(GetCookie("Time_Format","number"));
-	SetModStatsTitle();
 }
 
 function ScriptUpdateLayout(){
@@ -703,19 +718,58 @@ function ExportCSV(){
 	return 0;
 }
 
+function update_status(){
+	$j.ajax({
+		url: '/ext/modmon/detect_update.js',
+		dataType: 'script',
+		timeout: 3000,
+		error:	function(xhr){
+			setTimeout('update_status();', 1000);
+		},
+		success: function(){
+			if (updatestatus == "InProgress"){
+				setTimeout('update_status();', 1000);
+			}
+			else{
+				document.getElementById("imgChkUpdate").style.display = "none";
+				showhide("modmon_version_server", true);
+				if(updatestatus != "None"){
+					$j("#modmon_version_server").text("Updated version available: "+updatestatus);
+					showhide("btnChkUpdate", false);
+					showhide("btnDoUpdate", true);
+				}
+				else{
+					$j("#modmon_version_server").text("No update available");
+					showhide("btnChkUpdate", true);
+					showhide("btnDoUpdate", false);
+				}
+			}
+		}
+	});
+}
+
 function CheckUpdate(){
-	var action_script_tmp = "start_modmoncheckupdate";
-	document.form.action_script.value = action_script_tmp;
-	var restart_time = 10;
-	document.form.action_wait.value = restart_time;
-	showLoading();
-	document.form.submit();
+	showhide("btnChkUpdate", false);
+	document.formChkVer.action_script.value="start_modmoncheckupdate"
+	document.formChkVer.submit();
+	document.getElementById("imgChkUpdate").style.display = "";
+	setTimeout("update_status();", 2000);
 }
 
 function DoUpdate(){
 	var action_script_tmp = "start_modmondoupdate";
 	document.form.action_script.value = action_script_tmp;
 	var restart_time = 20;
+	document.form.action_wait.value = restart_time;
+	showLoading();
+	document.form.submit();
+}
+
+function applyRule(){
+	document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject())
+	var action_script_tmp = "start_modmonconfig";
+	document.form.action_script.value = action_script_tmp;
+	var restart_time = 5;
 	document.form.action_wait.value = restart_time;
 	showLoading();
 	document.form.submit();
@@ -746,8 +800,48 @@ function GetVersionNumber(versiontype){
 	}
 }
 
-function BuildMetricTable(name,title){
+function get_conf_file(){
+	$j.ajax({
+		url: '/ext/modmon/config.htm',
+		dataType: 'text',
+		error: function(xhr){
+			setTimeout("get_conf_file();", 1000);
+		},
+		success: function(data){
+			var configdata=data.split("\n");
+			configdata = configdata.filter(Boolean);
+			
+			for (var i = 0; i < configdata.length; i++){
+				if (configdata[i].indexOf("OUTPUTDATAMODE") != -1){
+					document.form.modmon_outputdatamode.value=configdata[i].split("=")[1].replace(/(\r\n|\n|\r)/gm,"");
+				}
+				else if (configdata[i].indexOf("OUTPUTTIMEMODE") != -1){
+					document.form.modmon_outputtimemode.value=configdata[i].split("=")[1].replace(/(\r\n|\n|\r)/gm,"");
+				}
+				else if (configdata[i].indexOf("STORAGELOCATION") != -1){
+					document.form.modmon_storagelocation.value=configdata[i].split("=")[1].replace(/(\r\n|\n|\r)/gm,"");
+				}
+				else if (configdata[i].indexOf("FIXTXPWR") != -1){
+					document.form.modmon_fixtxpwr.value=configdata[i].split("=")[1].replace(/(\r\n|\n|\r)/gm,"");
+				}
+			}
+		}
+	});
+}
+
+function BuildMetricTable(name,title,loopindex){
 	var charthtml = '<div style="line-height:10px;">&nbsp;</div>';
+	
+	if(loopindex == 0){
+		charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">';
+		charthtml+='<thead class="collapsible-jquery" id="table_charts">';
+		charthtml+='<tr>';
+		charthtml+='<td>Charts (click to expand/collapse)</td>';
+		charthtml+='</tr>';
+		charthtml+='</thead>';
+		charthtml+='<tr><td align="center" style="padding: 0px;">';
+	}
+	
 	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_metric_'+name+'">';
 	charthtml+='<thead class="collapsible-jquery" id="'+name+'">';
 	charthtml+='<tr>';
@@ -770,6 +864,13 @@ function BuildMetricTable(name,title){
 	charthtml+='</td>';
 	charthtml+='</tr>';
 	charthtml+='</table>';
+	
+	if(loopindex == metriclist.length-1){
+		charthtml+='</td>';
+		charthtml+='</tr>';
+		charthtml+='</table>';
+	}
+	
 	return charthtml;
 }
 
@@ -952,6 +1053,48 @@ function AddEventHandlers(){
 <th width="20%">Export</th>
 <td>
 <input type="button" onclick="ExportCSV();" value="Export to CSV" class="button_gen" name="btnExport">
+</td>
+</tr>
+</table>
+<div style="line-height:10px;">&nbsp;</div>
+<table width="100%" border="1" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_config">
+<thead class="collapsible-jquery" id="scriptconfig">
+<tr><td colspan="2">Configuration (click to expand/collapse)</td></tr>
+</thead>
+<tr class="even" id="rowdataoutput">
+<th width="40%">Data Output Mode (for CSV export)</th>
+<td class="settingvalue">
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputdatamode" id="modmon_dataoutput_average" class="input" value="average" checked>Average
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputdatamode" id="modmon_dataoutput_raw" class="input" value="raw">Raw
+</td>
+</tr>
+<tr class="even" id="rowtimeoutput">
+<th width="40%">Time Output Mode (for CSV export)</th>
+<td class="settingvalue">
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputtimemode" id="modmon_timeoutput_non-unix" class="input" value="non-unix" checked>Non-Unix
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputtimemode" id="modmon_timeoutput_unix" class="input" value="unix">Unix
+</td>
+</tr>
+<tr class="even" id="rowstorageloc">
+<th width="40%">Data Storage Location</th>
+<td class="settingvalue">
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_storagelocation" id="modmon_storageloc_jffs" class="input" value="jffs" checked>JFFS
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_storagelocation" id="modmon_storageloc_usb" class="input" value="usb">USB
+</td>
+</tr>
+
+<tr class="even" id="rowfixtxpwr">
+<th width="40%">Fix Upstream Power level reporting</th>
+<td class="settingvalue">
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_fixtxpwr" id="modmon_fixtxpwr_true" class="input" value="true" checked>True
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_fixtxpwr" id="modmon_fixtxpwr_false" class="input" value="false">False
+<span style="color:#FFCC00;">(reduce by 10x, needed in newer Hub 3 firmware)</span>
+</td>
+</tr>
+
+<tr class="apply_gen" valign="top" height="35px">
+<td colspan="2" style="background-color:rgb(77, 89, 93);">
+<input type="button" onclick="applyRule();" value="Save" class="button_gen" name="button">
 </td>
 </tr>
 </table>

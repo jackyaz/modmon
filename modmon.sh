@@ -329,9 +329,12 @@ Conf_Exists(){
 		if [ "$(wc -l < "$SCRIPT_CONF")" -eq 2 ]; then
 			echo "STORAGELOCATION=jffs" >> "$SCRIPT_CONF"
 		fi
+		if [ "$(wc -l < "$SCRIPT_CONF")" -eq 3 ]; then
+			echo "FIXTXPWR=false" >> "$SCRIPT_CONF"
+		fi
 		return 0
 	else
-		{ echo "OUTPUTDATAMODE=average"; echo "OUTPUTTIMEMODE=unix"; echo "STORAGELOCATION=jffs"; } > "$SCRIPT_CONF"
+		{ echo "OUTPUTDATAMODE=average"; echo "OUTPUTTIMEMODE=unix"; echo "STORAGELOCATION=jffs"; echo "FIXTXPWR=false"; } > "$SCRIPT_CONF"
 		return 1
 	fi
 }
@@ -559,6 +562,23 @@ OutputTimeMode(){
 	esac
 }
 
+FixTxPwr(){
+	case "$1" in
+		true)
+			sed -i 's/^FIXTXPWR.*$/FIXTXPWR=true/' "$SCRIPT_CONF"
+			Generate_CSVs
+		;;
+		false)
+			sed -i 's/^FIXTXPWR.*$/FIXTXPWR=false/' "$SCRIPT_CONF"
+			Generate_CSVs
+		;;
+		check)
+			FIXTXPWR=$(grep "FIXTXPWR" "$SCRIPT_CONF" | cut -f2 -d"=")
+			echo "$FIXTXPWR"
+		;;
+	esac
+}
+
 WriteStats_ToJS(){
 	echo "function $3(){" > "$2"
 	html='document.getElementById("'"$4"'").innerHTML="'
@@ -583,6 +603,10 @@ WriteSql_ToFile(){
 	
 	dividefactor=1
 	if echo "$2" | grep -qF "RxPwr" || echo "$2" | grep -qF "RxSnr" ; then
+		dividefactor=10
+	fi
+	
+	if echo "$2" | grep -qF "TxPwr" && [ "$(FixTxPwr "check")" = "true" ]; then
 		dividefactor=10
 	fi
 	
@@ -661,6 +685,10 @@ Generate_CSVs(){
 	{
 		dividefactor=1
 		if echo "$metric" | grep -qF "RxPwr" || echo "$metric" | grep -qF "RxSnr" ; then
+			dividefactor=10
+		fi
+		
+		if echo "$metric" | grep -qF "TxPwr" && [ "$(FixTxPwr "check")" = "true" ]; then
 			dividefactor=10
 		fi
 		
@@ -779,6 +807,7 @@ MainMenu(){
 	printf "2.    Toggle data output mode\\n      Currently \\e[1m%s\\e[0m values will be used for weekly and monthly charts\\n\\n" "$(OutputDataMode "check")"
 	printf "3.    Toggle time output mode\\n      Currently \\e[1m%s\\e[0m time values will be used for CSV exports\\n\\n" "$(OutputTimeMode "check")"
 	printf "s.    Toggle storage location for stats and config\\n      Current location is \\e[1m%s\\e[0m \\n\\n" "$(ScriptStorageLocation "check")"
+	printf "f.    Fix Upstream Power level reporting (reduce by 10x, needed in newer Hub 3 firmware)\\n      Currently \\e[1m%s\\e[0m \\n\\n" "$(FixTxPwr "check")"
 	printf "u.    Check for updates\\n"
 	printf "uf.   Update %s with latest version (force update)\\n\\n" "$SCRIPT_NAME"
 	printf "e.    Exit %s\\n\\n" "$SCRIPT_NAME"
@@ -812,6 +841,11 @@ MainMenu(){
 			s)
 				printf "\\n"
 				Menu_ToggleStorageLocation
+				break
+			;;
+			f)
+				printf "\\n"
+				Menu_FixTxPwr
 				break
 			;;
 			u)
@@ -966,6 +1000,14 @@ Menu_ToggleStorageLocation(){
 	elif [ "$(ScriptStorageLocation "check")" = "usb" ]; then
 		ScriptStorageLocation "jffs"
 		Create_Symlinks
+	fi
+}
+
+Menu_FixTxPwr(){
+	if [ "$(FixTxPwr "check")" = "true" ]; then
+		FixTxPwr "false"
+	elif [ "$(FixTxPwr "check")" = "false" ]; then
+		FixTxPwr "true"
 	fi
 }
 
