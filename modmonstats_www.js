@@ -145,7 +145,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity){
 		plugins: {
 			zoom: {
 				pan: {
-					enabled: false,
+					enabled: ChartPan,
 					mode: 'xy',
 					rangeMin: {
 						x: new Date().getTime() - (factor * numunitx),
