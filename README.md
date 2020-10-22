@@ -45,9 +45,9 @@ If this does not work, you will need to use the full path:
 
 ## Screenshots
 
-![WebUI](https://puu.sh/F4nIz/4b076a1e1a.png)
+![WebUI](https://puu.sh/GFIhF/4b2b21c3fd.png)
 
-![CLI UI](https://puu.sh/F4nHO/2cb4951f2d.png)
+![CLI UI](https://puu.sh/GFIfe/0ed3bef03d.png)
 
 
 ## Help
