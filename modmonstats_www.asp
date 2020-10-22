@@ -183,7 +183,7 @@ var RxCount,TxCount,RxColours,TxColours,$j=jQuery.noConflict(),maxNoCharts=18,cu
 <tr>
 <th width="20%">Update stats</th>
 <td>
-<input type="button" onclick="UpdateStats();" value="Update stats" class="button_gen" name="btnRunPingtest">
+<input type="button" onclick="UpdateStats();" value="Update stats" class="button_gen" name="btnUpdateStats">
 </td>
 </tr>
 <tr>
