@@ -1,4 +1,3 @@
-
 var $j = jQuery.noConflict(); //avoid conflicts on John's fork (state.js)
 var maxNoCharts = 18;
 var currentNoCharts = 0;
