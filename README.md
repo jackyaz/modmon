@@ -30,7 +30,7 @@ Using your preferred SSH client/terminal, copy and paste the following command, 
 
 ## Usage
 ### WebUI
-Modmon can be configured via the WebUI, in the Addons section.
+modmon can be configured via the WebUI, in the Addons section.
 
 ### Command Line
 To launch the modmon menu after installation, use:
