@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/jackyaz/modmon.svg?branch=master)](https://travis-ci.com/jackyaz/modmon)
 
 ## v1.1.0
-### Updated on 2020-10-21
+### Updated on 2020-10-24
 ## About
 modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries.
 
