@@ -14,17 +14,15 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v1.0.1"
+readonly SCRIPT_VERSION="v1.1.0"
 readonly SCRIPT_BRANCH="master"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/""$SCRIPT_NAME""/""$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
-readonly SCRIPT_CONF="$SCRIPT_DIR/config"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$SCRIPT_NAME"
 readonly SHARED_DIR="/jffs/addons/shared-jy"
 readonly SHARED_REPO="https://raw.githubusercontent.com/jackyaz/shared-jy/master"
 readonly SHARED_WEB_DIR="$SCRIPT_WEBPAGE_DIR/shared-jy"
-readonly CSV_OUTPUT_DIR="$SCRIPT_DIR/csv"
 [ -z "$(nvram get odmpid)" ] && ROUTER_MODEL=$(nvram get productid) || ROUTER_MODEL=$(nvram get odmpid)
 [ -f /opt/bin/sqlite3 ] && SQLITE3_PATH=/opt/bin/sqlite3 || SQLITE3_PATH=/usr/sbin/sqlite3
 ### End of script variables ###
@@ -58,8 +56,8 @@ Firmware_Version_Check(){
 Check_Lock(){
 	if [ -f "/tmp/$SCRIPT_NAME.lock" ]; then
 		ageoflock=$(($(date +%s) - $(date +%s -r /tmp/$SCRIPT_NAME.lock)))
-		if [ "$ageoflock" -gt 60 ]; then
-			Print_Output "true" "Stale lock file found (>60 seconds old) - purging lock" "$ERR"
+		if [ "$ageoflock" -gt 600 ]; then
+			Print_Output "true" "Stale lock file found (>600 seconds old) - purging lock" "$ERR"
 			kill "$(sed -n '1p' /tmp/$SCRIPT_NAME.lock)" >/dev/null 2>&1
 			Clear_Lock
 			echo "$$" > "/tmp/$SCRIPT_NAME.lock"
@@ -83,36 +81,89 @@ Clear_Lock(){
 	return 0
 }
 
-Update_Version(){
-	if [ -z "$1" ]; then
-		doupdate="false"
-		localver=$(grep "SCRIPT_VERSION=" /jffs/scripts/"$SCRIPT_NAME" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
-		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-		if [ "$localver" != "$serverver" ]; then
-			doupdate="version"
-		else
-			localmd5="$(md5sum "/jffs/scripts/$SCRIPT_NAME" | awk '{print $1}')"
-			remotemd5="$(curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | md5sum | awk '{print $1}')"
-			if [ "$localmd5" != "$remotemd5" ]; then
-				doupdate="md5"
+Set_Version_Custom_Settings(){
+	SETTINGSFILE="/jffs/addons/custom_settings.txt"
+	case "$1" in
+		local)
+			if [ -f "$SETTINGSFILE" ]; then
+				if [ "$(grep -c "modmon_version_local" $SETTINGSFILE)" -gt 0 ]; then
+					if [ "$SCRIPT_VERSION" != "$(grep "modmon_version_local" /jffs/addons/custom_settings.txt | cut -f2 -d' ')" ]; then
+						sed -i "s/modmon_version_local.*/modmon_version_local $SCRIPT_VERSION/" "$SETTINGSFILE"
+					fi
+				else
+					echo "modmon_version_local $SCRIPT_VERSION" >> "$SETTINGSFILE"
+				fi
+			else
+				echo "modmon_version_local $SCRIPT_VERSION" >> "$SETTINGSFILE"
 			fi
+		;;
+		server)
+			if [ -f "$SETTINGSFILE" ]; then
+				if [ "$(grep -c "modmon_version_server" $SETTINGSFILE)" -gt 0 ]; then
+					if [ "$2" != "$(grep "modmon_version_server" /jffs/addons/custom_settings.txt | cut -f2 -d' ')" ]; then
+						sed -i "s/modmon_version_server.*/modmon_version_server $2/" "$SETTINGSFILE"
+					fi
+				else
+					echo "modmon_version_server $2" >> "$SETTINGSFILE"
+				fi
+			else
+				echo "modmon_version_server $2" >> "$SETTINGSFILE"
+			fi
+		;;
+	esac
+}
+
+Update_Check(){
+	echo 'var updatestatus = "InProgress";' > "$SCRIPT_WEB_DIR/detect_update.js"
+	doupdate="false"
+	localver=$(grep "SCRIPT_VERSION=" /jffs/scripts/"$SCRIPT_NAME" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+	/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
+	serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+	if [ "$localver" != "$serverver" ]; then
+		doupdate="version"
+		Set_Version_Custom_Settings "server" "$serverver"
+		echo 'var updatestatus = "'"$serverver"'";'  > "$SCRIPT_WEB_DIR/detect_update.js"
+	else
+		localmd5="$(md5sum "/jffs/scripts/$SCRIPT_NAME" | awk '{print $1}')"
+		remotemd5="$(curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | md5sum | awk '{print $1}')"
+		if [ "$localmd5" != "$remotemd5" ]; then
+			doupdate="md5"
+			Set_Version_Custom_Settings "server" "$serverver-hotfix"
+			echo 'var updatestatus = "'"$serverver-hotfix"'";'  > "$SCRIPT_WEB_DIR/detect_update.js"
 		fi
+	fi
+	if [ "$doupdate" = "false" ]; then
+		echo 'var updatestatus = "None";'  > "$SCRIPT_WEB_DIR/detect_update.js"
+	fi
+	echo "$doupdate,$localver,$serverver"
+}
+
+Update_Version(){
+	if [ -z "$1" ] || [ "$1" = "unattended" ]; then
+		updatecheckresult="$(Update_Check)"
+		isupdate="$(echo "$updatecheckresult" | cut -f1 -d',')"
+		localver="$(echo "$updatecheckresult" | cut -f2 -d',')"
+		serverver="$(echo "$updatecheckresult" | cut -f3 -d',')"
 		
-		if [ "$doupdate" = "version" ]; then
+		if [ "$isupdate" = "version" ]; then
 			Print_Output "true" "New version of $SCRIPT_NAME available - updating to $serverver" "$PASS"
-		elif [ "$doupdate" = "md5" ]; then
+		elif [ "$isupdate" = "md5" ]; then
 			Print_Output "true" "MD5 hash of $SCRIPT_NAME does not match - downloading updated $serverver" "$PASS"
 		fi
 		
-		Update_File "modmonstats_www.asp"
 		Update_File "shared-jy.tar.gz"
 		
-		if [ "$doupdate" != "false" ]; then
+		if [ "$isupdate" != "false" ]; then
+			Update_File "modmonstats_www.asp"
+			
 			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated"
 			chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
 			Clear_Lock
-			exec "$0"
+			if [ -z "$1" ]; then
+				exec "$0" "setversion"
+			elif [ "$1" = "unattended" ]; then
+				exec "$0" "setversion" "unattended"
+			fi
 			exit 0
 		else
 			Print_Output "true" "No new version - latest is $localver" "$WARN"
@@ -120,19 +171,21 @@ Update_Version(){
 		fi
 	fi
 	
-	case "$1" in
-		force)
-			serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-			Print_Output "true" "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
-			Update_File "modmonstats_www.asp"
-			Update_File "shared-jy.tar.gz"
-			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated"
-			chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
-			Clear_Lock
-			exec "$0"
-			exit 0
-		;;
-	esac
+	if [ "$1" = "force" ]; then
+		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+		Print_Output "true" "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
+		Update_File "modmonstats_www.asp"
+		Update_File "shared-jy.tar.gz"
+		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated"
+		chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
+		Clear_Lock
+		if [ -z "$2" ]; then
+			exec "$0" "setversion"
+		elif [ "$2" = "unattended" ]; then
+			exec "$0" "setversion" "unattended"
+		fi
+		exit 0
+	fi
 }
 ############################################################################
 
@@ -181,24 +234,46 @@ Validate_Number(){
 	fi
 }
 
-Validate_IP(){
-	if expr "$1" : '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' >/dev/null; then
-		for i in 1 2 3 4; do
-			if [ "$(echo "$1" | cut -d. -f$i)" -gt 255 ]; then
-				Print_Output "false" "Octet $i ($(echo "$1" | cut -d. -f$i)) - is invalid, must be less than 255" "$ERR"
-				return 1
-			fi
-		done
-	else
-		Print_Output "false" "$1 - is not a valid IPv4 address, valid format is 1.2.3.4" "$ERR"
-		return 1
+Conf_FromSettings(){
+	SETTINGSFILE="/jffs/addons/custom_settings.txt"
+	TMPFILE="/tmp/modmon_settings.txt"
+	if [ -f "$SETTINGSFILE" ]; then
+		if [ "$(grep "modmon_" $SETTINGSFILE | grep -v "version" -c)" -gt 0 ]; then
+			Print_Output "true" "Updated settings from WebUI found, merging into $SCRIPT_CONF" "$PASS"
+			cp -a "$SCRIPT_CONF" "$SCRIPT_CONF.bak"
+			grep "modmon_" "$SETTINGSFILE" | grep -v "version" > "$TMPFILE"
+			sed -i "s/modmon_//g;s/ /=/g" "$TMPFILE"
+			while IFS='' read -r line || [ -n "$line" ]; do
+				SETTINGNAME="$(echo "$line" | cut -f1 -d'=' | awk '{ print toupper($1) }')"
+				SETTINGVALUE="$(echo "$line" | cut -f2 -d'=')"
+				sed -i "s/$SETTINGNAME=.*/$SETTINGNAME=$SETTINGVALUE/" "$SCRIPT_CONF"
+			done < "$TMPFILE"
+			grep 'modmon_version' "$SETTINGSFILE" > "$TMPFILE"
+			sed -i "\\~modmon_~d" "$SETTINGSFILE"
+			mv "$SETTINGSFILE" "$SETTINGSFILE.bak"
+			cat "$SETTINGSFILE.bak" "$TMPFILE" > "$SETTINGSFILE"
+			rm -f "$TMPFILE"
+			rm -f "$SETTINGSFILE.bak"
+			
+			ScriptStorageLocation "$(ScriptStorageLocation "check")"
+			Create_Symlinks
+			
+			Generate_CSVs
+			
+			Print_Output "true" "Merge of updated settings from WebUI completed successfully" "$PASS"
+		else
+			Print_Output "false" "No updated settings from WebUI found, no merge into $SCRIPT_CONF necessary" "$PASS"
+		fi
 	fi
 }
-
 
 Create_Dirs(){
 	if [ ! -d "$SCRIPT_DIR" ]; then
 		mkdir -p "$SCRIPT_DIR"
+	fi
+	
+	if [ ! -d "$SCRIPT_STORAGE_DIR" ]; then
+		mkdir -p "$SCRIPT_STORAGE_DIR"
 	fi
 	
 	if [ ! -d "$CSV_OUTPUT_DIR" ]; then
@@ -219,13 +294,13 @@ Create_Dirs(){
 }
 
 Create_Symlinks(){
-	rm -f "$SCRIPT_WEB_DIR/"* 2>/dev/null
+	rm -rf "${SCRIPT_WEB_DIR:?}/"* 2>/dev/null
 	
-	ln -s "$SCRIPT_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
+	ln -s "$SCRIPT_STORAGE_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
 	
-	if [ ! -d "$SCRIPT_WEB_DIR/csv" ]; then
-		ln -s "$CSV_OUTPUT_DIR" "$SCRIPT_WEB_DIR/csv" 2>/dev/null
-	fi
+	ln -s "$SCRIPT_CONF" "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
+	
+	ln -s "$CSV_OUTPUT_DIR" "$SCRIPT_WEB_DIR/csv" 2>/dev/null
 	
 	if [ ! -d "$SHARED_WEB_DIR" ]; then
 		ln -s "$SHARED_DIR" "$SHARED_WEB_DIR" 2>/dev/null
@@ -237,12 +312,15 @@ Conf_Exists(){
 		dos2unix "$SCRIPT_CONF"
 		chmod 0644 "$SCRIPT_CONF"
 		sed -i -e 's/"//g' "$SCRIPT_CONF"
+		if [ "$(wc -l < "$SCRIPT_CONF")" -eq 2 ]; then
+			echo "STORAGELOCATION=jffs" >> "$SCRIPT_CONF"
+		fi
+		if [ "$(wc -l < "$SCRIPT_CONF")" -eq 3 ]; then
+			echo "FIXTXPWR=false" >> "$SCRIPT_CONF"
+		fi
 		return 0
 	else
-		{
-		echo "OUTPUTDATAMODE=average"
-		echo "OUTPUTTIMEMODE=unix"
-		} > "$SCRIPT_CONF"
+		{ echo "OUTPUTDATAMODE=average"; echo "OUTPUTTIMEMODE=unix"; echo "STORAGELOCATION=jffs"; echo "FIXTXPWR=false"; } > "$SCRIPT_CONF"
 		return 1
 	fi
 }
@@ -253,7 +331,7 @@ Auto_ServiceEvent(){
 			if [ -f /jffs/scripts/service-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/service-event)
 				# shellcheck disable=SC2016
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME generate"' "$1" "$2" &'' # '"$SCRIPT_NAME" /jffs/scripts/service-event)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME service_event"' "$1" "$2" &'' # '"$SCRIPT_NAME" /jffs/scripts/service-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/service-event
@@ -261,13 +339,13 @@ Auto_ServiceEvent(){
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					# shellcheck disable=SC2016
-					echo "/jffs/scripts/$SCRIPT_NAME generate"' "$1" "$2" &'' # '"$SCRIPT_NAME" >> /jffs/scripts/service-event
+					echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$1" "$2" &'' # '"$SCRIPT_NAME" >> /jffs/scripts/service-event
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/service-event
 				echo "" >> /jffs/scripts/service-event
 				# shellcheck disable=SC2016
-				echo "/jffs/scripts/$SCRIPT_NAME generate"' "$1" "$2" &'' # '"$SCRIPT_NAME" >> /jffs/scripts/service-event
+				echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$1" "$2" &'' # '"$SCRIPT_NAME" >> /jffs/scripts/service-event
 				chmod 0755 /jffs/scripts/service-event
 			fi
 		;;
@@ -288,19 +366,19 @@ Auto_Startup(){
 		create)
 			if [ -f /jffs/scripts/services-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/services-start)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME startup"' # '"$SCRIPT_NAME" /jffs/scripts/services-start)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" /jffs/scripts/services-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "/jffs/scripts/$SCRIPT_NAME startup"' # '"$SCRIPT_NAME" >> /jffs/scripts/services-start
+					echo "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" >> /jffs/scripts/services-start
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/services-start
 				echo "" >> /jffs/scripts/services-start
-				echo "/jffs/scripts/$SCRIPT_NAME startup"' # '"$SCRIPT_NAME" >> /jffs/scripts/services-start
+				echo "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" >> /jffs/scripts/services-start
 				chmod 0755 /jffs/scripts/services-start
 			fi
 		;;
@@ -360,7 +438,7 @@ Mount_WebUI(){
 	fi
 	Print_Output "true" "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 	cp -f "$SCRIPT_DIR/modmonstats_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
-	echo "Cable Modem Stats" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
+	echo "modmon" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	
 	if [ "$(uname -o)" = "ASUSWRT-Merlin" ]; then
 	
@@ -389,10 +467,51 @@ Mount_WebUI(){
 		if ! grep -q "javascript:window.open('/ext/shared-jy/redirect.htm'" /tmp/menuTree.js ; then
 			sed -i "s~ext/shared-jy/redirect.htm~javascript:window.open('/ext/shared-jy/redirect.htm','_blank')~" /tmp/menuTree.js
 		fi
-		sed -i "/url: \"javascript:window.open('\/ext\/shared-jy\/redirect.htm'/i {url: \"$MyPage\", tabName: \"Cable Modem Stats\"}," /tmp/menuTree.js
+		sed -i "/url: \"javascript:window.open('\/ext\/shared-jy\/redirect.htm'/i {url: \"$MyPage\", tabName: \"modmon\"}," /tmp/menuTree.js
 		umount /www/require/modules/menuTree.js 2>/dev/null
 		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 	fi
+}
+
+ScriptStorageLocation(){
+	case "$1" in
+		usb)
+			sed -i 's/^STORAGELOCATION.*$/STORAGELOCATION=usb/' "$SCRIPT_CONF"
+			mkdir -p "/opt/share/$SCRIPT_NAME.d/"
+			mv "/jffs/addons/$SCRIPT_NAME.d/csv" "/opt/share/$SCRIPT_NAME.d/" 2>/dev/null
+			mv "/jffs/addons/$SCRIPT_NAME.d/config" "/opt/share/$SCRIPT_NAME.d/" 2>/dev/null
+			mv "/jffs/addons/$SCRIPT_NAME.d/config.bak" "/opt/share/$SCRIPT_NAME.d/" 2>/dev/null
+			mv "/jffs/addons/$SCRIPT_NAME.d/modstatstext.js" "/opt/share/$SCRIPT_NAME.d/" 2>/dev/null
+			mv "/jffs/addons/$SCRIPT_NAME.d/modstats.db" "/opt/share/$SCRIPT_NAME.d/" 2>/dev/null
+			SCRIPT_CONF="/opt/share/$SCRIPT_NAME.d/config"
+			ScriptStorageLocation "load"
+		;;
+		jffs)
+			sed -i 's/^STORAGELOCATION.*$/STORAGELOCATION=jffs/' "$SCRIPT_CONF"
+			mkdir -p "/jffs/addons/$SCRIPT_NAME.d/"
+			mv "/opt/share/$SCRIPT_NAME.d/csv" "/jffs/addons/$SCRIPT_NAME.d/" 2>/dev/null
+			mv "/opt/share/$SCRIPT_NAME.d/config" "/jffs/addons/$SCRIPT_NAME.d/" 2>/dev/null
+			mv "/opt/share/$SCRIPT_NAME.d/config.bak" "/jffs/addons/$SCRIPT_NAME.d/" 2>/dev/null
+			mv "/opt/share/$SCRIPT_NAME.d/modstatstext.js" "/jffs/addons/$SCRIPT_NAME.d/" 2>/dev/null
+			mv "/opt/share/$SCRIPT_NAME.d/modstats.db" "/jffs/addons/$SCRIPT_NAME.d/" 2>/dev/null
+			SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
+			ScriptStorageLocation "load"
+		;;
+		check)
+			STORAGELOCATION=$(grep "STORAGELOCATION" "$SCRIPT_CONF" | cut -f2 -d"=")
+			echo "$STORAGELOCATION"
+		;;
+		load)
+			STORAGELOCATION=$(grep "STORAGELOCATION" "$SCRIPT_CONF" | cut -f2 -d"=")
+			if [ "$STORAGELOCATION" = "usb" ]; then
+				SCRIPT_STORAGE_DIR="/opt/share/$SCRIPT_NAME.d"
+			elif [ "$STORAGELOCATION" = "jffs" ]; then
+				SCRIPT_STORAGE_DIR="/jffs/addons/$SCRIPT_NAME.d"
+			fi
+
+			CSV_OUTPUT_DIR="$SCRIPT_STORAGE_DIR/csv"
+		;;
+	esac
 }
 
 OutputDataMode(){
@@ -429,6 +548,23 @@ OutputTimeMode(){
 	esac
 }
 
+FixTxPwr(){
+	case "$1" in
+		true)
+			sed -i 's/^FIXTXPWR.*$/FIXTXPWR=true/' "$SCRIPT_CONF"
+			Generate_CSVs
+		;;
+		false)
+			sed -i 's/^FIXTXPWR.*$/FIXTXPWR=false/' "$SCRIPT_CONF"
+			Generate_CSVs
+		;;
+		check)
+			FIXTXPWR=$(grep "FIXTXPWR" "$SCRIPT_CONF" | cut -f2 -d"=")
+			echo "$FIXTXPWR"
+		;;
+	esac
+}
+
 WriteStats_ToJS(){
 	echo "function $3(){" > "$2"
 	html='document.getElementById("'"$4"'").innerHTML="'
@@ -449,10 +585,14 @@ WriteSql_ToFile(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output $5$6.htm"
-	} >> "$7"
+	} > "$7"
 	
 	dividefactor=1
 	if echo "$2" | grep -qF "RxPwr" || echo "$2" | grep -qF "RxSnr" ; then
+		dividefactor=10
+	fi
+	
+	if echo "$2" | grep -qF "TxPwr" && [ "$(FixTxPwr "check")" = "true" ]; then
 		dividefactor=10
 	fi
 	
@@ -460,12 +600,14 @@ WriteSql_ToFile(){
 }
 
 Get_Modem_Stats(){
+	Create_Dirs
+	Conf_Exists
+	Set_Version_Custom_Settings "local"
+	ScriptStorageLocation "load"
+	Create_Symlinks
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
-	Create_Dirs
-	Create_Symlinks
-	Conf_Exists
 	
 	TZ=$(cat /etc/TZ)
 	export TZ
@@ -480,8 +622,8 @@ Get_Modem_Stats(){
 	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
 		for metric in $metriclist; do
 		{
-			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] REAL NOT NULL);" >> /tmp/modmon-stats.sql
-			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 			
 			channelcount="$(grep -c "$metric" $shstatsfile)"
@@ -492,19 +634,18 @@ Get_Modem_Stats(){
 				echo "INSERT INTO modstats_$metric ([Timestamp],[ChannelNum],[Measurement]) values($timenow,$counter,$measurement);" >> /tmp/modmon-stats.sql
 				counter=$((counter + 1))
 			done
-			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			rm -f /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			
 			echo "DELETE FROM [modstats_$metric] WHERE [Timestamp] < ($timenow - (86400*30));" > /tmp/modmon-stats.sql
-			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 		}
 		done
 		
 		Generate_CSVs
 		
-		echo "Cable modem stats retrieved on $timenowfriendly" > "/tmp/modstatstitle.txt"
-		WriteStats_ToJS "/tmp/modstatstitle.txt" "$SCRIPT_DIR/modstatstext.js" "SetModStatsTitle" "statstitle"
+		echo "Stats last updated: $timenowfriendly" > "/tmp/modstatstitle.txt"
+		WriteStats_ToJS "/tmp/modstatstitle.txt" "$SCRIPT_STORAGE_DIR/modstatstext.js" "SetModStatsTitle" "statstitle"
 		Print_Output "false" "Cable modem stats successfully retrieved" "$PASS"
 		
 		rm -f /tmp/modmon-stats.sql
@@ -533,14 +674,17 @@ Generate_CSVs(){
 			dividefactor=10
 		fi
 		
+		if echo "$metric" | grep -qF "TxPwr" && [ "$(FixTxPwr "check")" = "true" ]; then
+			dividefactor=10
+		fi
+		
 		{
 			echo ".mode csv"
 			echo ".headers on"
 			echo ".output $CSV_OUTPUT_DIR/$metric""daily.htm"
 			echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= $timenow - 86400) ORDER BY [ChannelNum] ASC;"
 		} > /tmp/modmon-stats.sql
-		"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-		rm -f /tmp/modmon-stats.sql
+		"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 		
 		if [ "$OUTPUTDATAMODE" = "raw" ]; then
 			{
@@ -549,8 +693,7 @@ Generate_CSVs(){
 				echo ".output $CSV_OUTPUT_DIR/$metric""weekly"".htm"
 				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*7) ORDER BY [ChannelNum] ASC;"
 			} > /tmp/modmon-stats.sql
-			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			rm -f /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			
 			{
 				echo ".mode csv"
@@ -558,16 +701,13 @@ Generate_CSVs(){
 				echo ".output $CSV_OUTPUT_DIR/$metric""monthly"".htm"
 				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [ChannelNum] ASC;"
 			} > /tmp/modmon-stats.sql
-			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			rm -f /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 		elif [ "$OUTPUTDATAMODE" = "average" ]; then
 			WriteSql_ToFile "Measurement" "modstats_$metric" 3 7 "$CSV_OUTPUT_DIR/$metric" "weekly" "/tmp/modmon-stats.sql" "$timenow"
-			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			rm -f /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			
 			WriteSql_ToFile "Measurement" "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric" "monthly" "/tmp/modmon-stats.sql" "$timenow"
-			"$SQLITE3_PATH" "$SCRIPT_DIR/modstats.db" < /tmp/modmon-stats.sql
-			rm -f /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 		fi
 	}
 	done
@@ -649,11 +789,11 @@ ScriptHeader(){
 }
 
 MainMenu(){
-	OUTPUTDATAMODE_MENU="$(OutputDataMode "check")"
-	OUTPUTTIMEMODE_MENU="$(OutputTimeMode "check")"
 	printf "1.    Check stats now\\n\\n"
-	printf "2.    Toggle data output mode\\n      Currently \\e[1m%s\\e[0m values will be used for weekly and monthly charts\\n\\n" "$OUTPUTDATAMODE_MENU"
-	printf "3.    Toggle time output mode\\n      Currently \\e[1m%s\\e[0m time values will be used for CSV exports\\n\\n" "$OUTPUTTIMEMODE_MENU"
+	printf "2.    Toggle data output mode\\n      Currently \\e[1m%s\\e[0m values will be used for weekly and monthly charts\\n\\n" "$(OutputDataMode "check")"
+	printf "3.    Toggle time output mode\\n      Currently \\e[1m%s\\e[0m time values will be used for CSV exports\\n\\n" "$(OutputTimeMode "check")"
+	printf "s.    Toggle storage location for stats and config\\n      Current location is \\e[1m%s\\e[0m \\n\\n" "$(ScriptStorageLocation "check")"
+	printf "f.    Fix Upstream Power level reporting (reduce by 10x, needed in newer Hub 3 firmware)\\n      Currently \\e[1m%s\\e[0m \\n\\n" "$(FixTxPwr "check")"
 	printf "u.    Check for updates\\n"
 	printf "uf.   Update %s with latest version (force update)\\n\\n" "$SCRIPT_NAME"
 	printf "e.    Exit %s\\n\\n" "$SCRIPT_NAME"
@@ -676,16 +816,22 @@ MainMenu(){
 			;;
 			2)
 				printf "\\n"
-				if Check_Lock "menu"; then
-					Menu_ToggleOutputDataMode
-				fi
+				Menu_ToggleOutputDataMode
 				break
 			;;
 			3)
 				printf "\\n"
-				if Check_Lock "menu"; then
-					Menu_ToggleOutputTimeMode
-				fi
+				Menu_ToggleOutputTimeMode
+				break
+			;;
+			s)
+				printf "\\n"
+				Menu_ToggleStorageLocation
+				break
+			;;
+			f)
+				printf "\\n"
+				Menu_FixTxPwr
 				break
 			;;
 			u)
@@ -782,8 +928,10 @@ Menu_Install(){
 	fi
 	
 	Create_Dirs
-	Create_Symlinks
 	Conf_Exists
+	Set_Version_Custom_Settings "local"
+	ScriptStorageLocation "load"
+	Create_Symlinks
 	
 	Update_File "modmonstats_www.asp"
 	Update_File "shared-jy.tar.gz"
@@ -797,13 +945,15 @@ Menu_Install(){
 }
 
 Menu_Startup(){
+	Create_Dirs
+	Conf_Exists
+	Set_Version_Custom_Settings "local"
+	ScriptStorageLocation "load"
+	Create_Symlinks
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Shortcut_script create
-	Create_Dirs
-	Create_Symlinks
-	Conf_Exists
 	Mount_WebUI
 	Clear_Lock
 }
@@ -819,7 +969,6 @@ Menu_ToggleOutputDataMode(){
 	elif [ "$(OutputDataMode "check")" = "average" ]; then
 		OutputDataMode "raw"
 	fi
-	Clear_Lock
 }
 
 Menu_ToggleOutputTimeMode(){
@@ -828,7 +977,24 @@ Menu_ToggleOutputTimeMode(){
 	elif [ "$(OutputTimeMode "check")" = "non-unix" ]; then
 		OutputTimeMode "unix"
 	fi
-	Clear_Lock
+}
+
+Menu_ToggleStorageLocation(){
+	if [ "$(ScriptStorageLocation "check")" = "jffs" ]; then
+		ScriptStorageLocation "usb"
+		Create_Symlinks
+	elif [ "$(ScriptStorageLocation "check")" = "usb" ]; then
+		ScriptStorageLocation "jffs"
+		Create_Symlinks
+	fi
+}
+
+Menu_FixTxPwr(){
+	if [ "$(FixTxPwr "check")" = "true" ]; then
+		FixTxPwr "false"
+	elif [ "$(FixTxPwr "check")" = "false" ]; then
+		FixTxPwr "true"
+	fi
 }
 
 Menu_Update(){
@@ -862,6 +1028,7 @@ Menu_Uninstall(){
 		case "$confirm" in
 			y|Y)
 				rm -rf "$SCRIPT_DIR" 2>/dev/null
+				rm -rf "$SCRIPT_STORAGE_DIR" 2>/dev/null
 				break
 			;;
 			*)
@@ -874,10 +1041,80 @@ Menu_Uninstall(){
 	Print_Output "true" "Uninstall completed" "$PASS"
 }
 
+NTP_Ready(){
+	if [ "$1" = "service_event" ]; then
+		if [ -n "$2" ] && [ "$(echo "$3" | grep -c "$SCRIPT_NAME")" -eq 0 ]; then
+			exit 0
+		fi
+	fi
+	if [ "$(nvram get ntp_ready)" = "0" ]; then
+		ntpwaitcount="0"
+		Check_Lock
+		while [ "$(nvram get ntp_ready)" = "0" ] && [ "$ntpwaitcount" -lt "300" ]; do
+			ntpwaitcount="$((ntpwaitcount + 1))"
+			if [ "$ntpwaitcount" = "60" ]; then
+				Print_Output "true" "Waiting for NTP to sync..." "$WARN"
+			fi
+			sleep 1
+		done
+		if [ "$ntpwaitcount" -ge "300" ]; then
+			Print_Output "true" "NTP failed to sync after 5 minutes. Please resolve!" "$CRIT"
+			Clear_Lock
+			exit 1
+		else
+			Print_Output "true" "NTP synced, $SCRIPT_NAME will now continue" "$PASS"
+			Clear_Lock
+		fi
+	fi
+}
+
+### function based on @Adamm00's Skynet USB wait function ###
+Entware_Ready(){
+	if [ "$1" = "service_event" ]; then
+		if [ -n "$2" ] && [ "$(echo "$3" | grep -c "$SCRIPT_NAME")" -eq 0 ]; then
+			exit 0
+		fi
+	fi
+
+	if [ ! -f "/opt/bin/opkg" ] && ! echo "$@" | grep -wqE "(install|uninstall|update|forceupdate)"; then
+		Check_Lock
+		sleepcount=1
+		while [ ! -f "/opt/bin/opkg" ] && [ "$sleepcount" -le 10 ]; do
+			Print_Output "true" "Entware not found, sleeping for 10s (attempt $sleepcount of 10)" "$ERR"
+			sleepcount="$((sleepcount + 1))"
+			sleep 10
+		done
+		if [ ! -f "/opt/bin/opkg" ]; then
+			Print_Output "true" "Entware not found and is required for $SCRIPT_NAME to run, please resolve" "$CRIT"
+			Clear_Lock
+			exit 1
+		else
+			Print_Output "true" "Entware found, $SCRIPT_NAME will now continue" "$PASS"
+			Clear_Lock
+		fi
+	fi
+}
+### ###
+
+NTP_Ready "$@"
+Entware_Ready "$@"
+
+if [ -f "/opt/share/$SCRIPT_NAME.d/config" ]; then
+	SCRIPT_CONF="/opt/share/$SCRIPT_NAME.d/config"
+	SCRIPT_STORAGE_DIR="/opt/share/$SCRIPT_NAME.d"
+else
+	SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
+	SCRIPT_STORAGE_DIR="/jffs/addons/$SCRIPT_NAME.d"
+fi
+
+CSV_OUTPUT_DIR="$SCRIPT_STORAGE_DIR/csv"
+
 if [ -z "$1" ]; then
 	Create_Dirs
-	Create_Symlinks
 	Conf_Exists
+	Set_Version_Custom_Settings "local"
+	ScriptStorageLocation "load"
+	Create_Symlinks
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
@@ -900,13 +1137,8 @@ case "$1" in
 		exit 0
 	;;
 	generate)
-		if [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME" ]; then
-			Check_Lock
-			Menu_GenerateStats
-		elif [ -z "$2" ] && [ -z "$3" ]; then
-			Check_Lock
-			Menu_GenerateStats
-		fi
+		Check_Lock
+		Menu_GenerateStats
 		exit 0
 	;;
 	outputcsv)
@@ -915,14 +1147,43 @@ case "$1" in
 		Clear_Lock
 		exit 0
 	;;
+	service_event)
+		if [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME" ]; then
+			Menu_GenerateStats
+			exit 0
+		elif [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME""config" ]; then
+			Conf_FromSettings
+			exit 0
+		elif [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME""checkupdate" ]; then
+			updatecheckresult="$(Update_Check)"
+			exit 0
+		elif [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME""doupdate" ]; then
+			Update_Version "force" "unattended"
+			exit 0
+		fi
+		exit 0
+	;;
 	update)
-		Check_Lock
 		Menu_Update
+		Update_Version "unattended"
 		exit 0
 	;;
 	forceupdate)
-		Check_Lock
 		Menu_ForceUpdate
+		Update_Version "force" "unattended"
+		exit 0
+	;;
+	setversion)
+		Set_Version_Custom_Settings "local"
+		Set_Version_Custom_Settings "server" "$SCRIPT_VERSION"
+		if [ -z "$2" ]; then
+			exec "$0"
+		fi
+		exit 0
+	;;
+	checkupdate)
+		#shellcheck disable=SC2034
+		updatecheckresult="$(Update_Check)"
 		exit 0
 	;;
 	uninstall)
@@ -931,23 +1192,17 @@ case "$1" in
 		exit 0
 	;;
 	develop)
-		Check_Lock
 		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="develop"/' "/jffs/scripts/$SCRIPT_NAME"
-		Clear_Lock
 		exec "$0" "update"
 		exit 0
 	;;
 	stable)
-		Check_Lock
 		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="master"/' "/jffs/scripts/$SCRIPT_NAME"
-		Clear_Lock
 		exec "$0" "update"
 		exit 0
 	;;
 	*)
-		Check_Lock
 		echo "Command not recognised, please try again"
-		Clear_Lock
 		exit 1
 	;;
 esac

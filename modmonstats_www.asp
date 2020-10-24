@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="-1">
 <link rel="shortcut icon" href="images/favicon.png">
 <link rel="icon" href="images/favicon.png">
-<title>Cable Modem Stats</title>
+<title>modmon</title>
 <link rel="stylesheet" type="text/css" href="index_style.css">
 <link rel="stylesheet" type="text/css" href="form_style.css">
 <style>
@@ -25,7 +25,7 @@ thead.collapsible {
   cursor: pointer;
 }
 
-thead.collapsibleparent {
+thead.collapsible-jquery {
   color: white;
   padding: 0px;
   width: 100%;
@@ -94,14 +94,6 @@ td.channelcell {
 .StatsTable td:last-child {
   border-right: none !important;
 }
-
-.collapsiblecontent {
-  padding: 0px;
-  max-height: 0;
-  overflow: hidden;
-  border: none;
-  transition: max-height 0.2s ease-out;
-}
 </style>
 <script language="JavaScript" type="text/javascript" src="/ext/shared-jy/jquery.js"></script>
 <script language="JavaScript" type="text/javascript" src="/ext/shared-jy/moment.js"></script>
@@ -121,694 +113,18 @@ td.channelcell {
 <script language="JavaScript" type="text/javascript" src="/validator.js"></script>
 <script language="JavaScript" type="text/javascript" src="/ext/modmon/modstatstext.js"></script>
 <script>
-var $j = jQuery.noConflict(); //avoid conflicts on John's fork (state.js)
-var maxNoCharts = 18;
-var currentNoCharts = 0;
-
-var ShowLines=GetCookie("ShowLines");
-
-var metriclist = ["RxPwr","RxSnr","RxPstRs","TxPwr","TxT3Out","TxT4Out"];
-var titlelist = ["Downstream Power","Downstream SNR","Post-RS Errors","Upstream Power","T3 Timeouts","T4 Timeouts"];
-var measureunitlist = ["dBmV","dB","","dBmV","",""];
-var chartlist = ["daily","weekly","monthly"];
-var timeunitlist = ["hour","day","day"];
-var intervallist = [24,7,30];
-
-var RxCount,TxCount,RxColours,TxColours;
-var chartColours = ['rgba(24,113,65, 1)','rgba(205,117,81, 1)','rgba(230,55,90, 1)','rgba(5,206,61, 1)','rgba(131,4,176, 1)','rgba(196,145,14, 1)','rgba(169,229,70, 1)','rgba(25,64,183, 1)','rgba(23,153,199, 1)','rgba(223,46,248, 1)','rgba(240,92,214, 1)','rgba(123,137,211, 1)','rgba(141,68,215, 1)','rgba(74,210,128, 1)','rgba(223,247,240, 1)','rgba(226,27,93, 1)','rgba(253,78,222, 1)','rgba(63,192,102, 1)','rgba(82,66,162, 1)','rgba(65,190,78, 1)','rgba(154,113,118, 1)','rgba(222,98,201, 1)','rgba(198,186,137, 1)','rgba(178,45,245, 1)','rgba(95,245,50, 1)','rgba(247,142,18, 1)','rgba(103,152,205, 1)','rgba(39,104,180, 1)','rgba(132,165,5, 1)','rgba(8,249,253, 1)','rgba(227,170,207, 1)','rgba(196,70,76, 1)','rgba(11,197,73, 1)','rgba(127,50,202, 1)','rgba(33,248,170, 1)','rgba(17,216,225, 1)','rgba(176,123,12, 1)','rgba(181,111,105, 1)','rgba(104,122,233, 1)','rgba(217,102,107, 1)','rgba(188,174,88, 1)','rgba(30,224,236, 1)','rgba(169,39,247, 1)','rgba(251,86,116, 1)','rgba(217,163,80, 1)','rgba(155,120,34, 1)','rgba(82,124,118, 1)','rgba(102,89,62, 1)','rgba(48,126,7, 1)','rgba(48,118,188, 1)','rgba(223,246,227, 1)','rgba(152,11,129, 1)','rgba(66,97,241, 1)','rgba(32,113,78, 1)','rgba(83,142,226, 1)','rgba(210,105,250, 1)','rgba(125,115,7, 1)','rgba(198,37,71, 1)','rgba(253,99,153, 1)','rgba(171,225,78, 1)','rgba(66,82,121, 1)','rgba(5,82,115, 1)','rgba(22,62,141, 1)','rgba(135,59,161, 1)','rgba(20,223,59, 1)','rgba(17,206,99, 1)','rgba(142,162,133, 1)','rgba(206,76,155, 1)','rgba(131,87,41, 1)','rgba(199,234,37, 1)','rgba(176,94,156, 1)','rgba(13,58,185, 1)','rgba(147,19,178, 1)','rgba(48,203,55, 1)','rgba(250,31,116, 1)','rgba(138,9,168, 1)','rgba(90,208,244, 1)','rgba(128,110,93, 1)','rgba(222,202,95, 1)','rgba(189,78,184, 1)','rgba(122,41,65, 1)','rgba(243,176,73, 1)','rgba(23,123,71, 1)','rgba(209,50,12, 1)','rgba(253,218,100, 1)','rgba(214,18,185, 1)','rgba(31,254,215, 1)','rgba(191,53,224, 1)','rgba(117,197,238, 1)','rgba(183,123,104, 1)','rgba(88,34,248, 1)','rgba(124,157,92, 1)','rgba(76,59,160, 1)','rgba(143,235,139, 1)','rgba(59,85,112, 1)','rgba(233,54,148, 1)','rgba(244,176,124, 1)','rgba(246,246,104, 1)','rgba(169,171,44, 1)','rgba(240,3,14, 1)'];
-
-Chart.defaults.global.defaultFontColor = "#CCC";
-Chart.Tooltip.positioners.cursor = function(chartElements, coordinates) {
-	return coordinates;
-};
-
-function keyHandler(e) {
-	if (e.keyCode == 27){
-		$j(document).off("keydown");
-		ResetZoom();
-	}
-}
-
-$j(document).keydown(function(e){keyHandler(e);});
-$j(document).keyup(function(e){
-	$j(document).keydown(function(e){
-		keyHandler(e);
-	});
-});
-
-function Draw_Chart_NoData(txtchartname){
-	document.getElementById("divLineChart"+txtchartname).width="730";
-	document.getElementById("divLineChart"+txtchartname).height="300";
-	document.getElementById("divLineChart"+txtchartname).style.width="730px";
-	document.getElementById("divLineChart"+txtchartname).style.height="300px";
-	var ctx = document.getElementById("divLineChart"+txtchartname).getContext("2d");
-	ctx.save();
-	ctx.textAlign = 'center';
-	ctx.textBaseline = 'middle';
-	ctx.font = "normal normal bolder 48px Arial";
-	ctx.fillStyle = 'white';
-	ctx.fillText('No data to display', 365, 150);
-	ctx.restore();
-}
-
-function Draw_Chart(txtchartname,txttitle,txtunity,txtunitx,numunitx,dataobject){
-	if(typeof dataobject === 'undefined' || dataobject === null) { Draw_Chart_NoData(txtchartname); return; }
-	if (dataobject.length == 0) { Draw_Chart_NoData(txtchartname); return; }
-	
-	var unique = [];
-	var chartChannels = [];
-	for( let i = 0; i < dataobject.length; i++ ){
-		if( !unique[dataobject[i].Channel]){
-			chartChannels.push(dataobject[i].Channel);
-			unique[dataobject[i].Channel] = 1;
-		}
-	}
-	
-	var chartLabels = dataobject.map(function(d) {return d.Channel});
-	var chartData = dataobject.map(function(d) {return {x: d.Time, y: d.Value}});
-	var objchartname=window["LineChart"+txtchartname];
-	
-	factor=0;
-	if (txtunitx=="hour"){
-		factor=60*60*1000;
-	}
-	else if (txtunitx=="day"){
-		factor=60*60*24*1000;
-	}
-	if (objchartname != undefined) objchartname.destroy();
-	var ctx = document.getElementById("divLineChart"+txtchartname).getContext("2d");
-	var lineOptions = {
-		segmentShowStroke : false,
-		segmentStrokeColor : "#000",
-		//animationEasing : "easeOutQuart",
-		//animationSteps : 100,
-		animation: {
-			duration: 0 // general animation time
-		},
-		responsiveAnimationDuration: 0, // animation duration after a resize
-		maintainAspectRatio: false,
-		animateScale : true,
-		hover: { mode: "point" },
-		legend: {
-			display: true,
-			position: "bottom",
-			labels: {
-				boxWidth: 10,
-				fontSize: 10
-			}
-		},
-		title: { display: true, text: txttitle },
-		tooltips: {
-			callbacks: {
-					title: function (tooltipItem, data) { return (moment(tooltipItem[0].xLabel,"X").format('YYYY-MM-DD HH:mm:ss')); },
-					label: function (tooltipItem, data) { return data.datasets[tooltipItem.datasetIndex].label + ": " + round(data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index].y,3).toFixed(3) + ' ' + txtunity;}
-				},
-				mode: 'point',
-				position: 'cursor',
-				intersect: true
-		},
-		scales: {
-			xAxes: [{
-				type: "time",
-				gridLines: { display: true, color: "#282828" },
-				ticks: {
-					display: true,
-					min: moment().subtract(numunitx, txtunitx+"s")
-				},
-				time: { parser: "X", unit: txtunitx, stepSize: 1 }
-			}],
-			yAxes: [{
-				gridLines: { display: false, color: "#282828" },
-				scaleLabel: { display: false, labelString: txttitle },
-				ticks: {
-					display: true,
-					beginAtZero: startAtZero(txtchartname),
-					max: getLimit(chartData,"y","max",false) + getLimit(chartData,"y","max",false)*0.1,
-					callback: function (value, index, values) {
-						return round(value,3).toFixed(3) + ' ' + txtunity;
-					}
-				},
-			}]
-		},
-		plugins: {
-			zoom: {
-				pan: {
-					enabled: false,
-					mode: 'xy',
-					rangeMin: {
-						x: new Date().getTime() - (factor * numunitx),
-						y: getLimit(chartData,"y","min",false) - Math.sqrt(Math.pow(getLimit(chartData,"y","min",false),2))*0.1,
-					},
-					rangeMax: {
-						x: new Date().getTime(),
-						y: getLimit(chartData,"y","max",false) + getLimit(chartData,"y","max",false)*0.1,
-					},
-				},
-				zoom: {
-					enabled: true,
-					drag: true,
-					mode: 'xy',
-					rangeMin: {
-						x: new Date().getTime() - (factor * numunitx),
-						y: getLimit(chartData,"y","min",false) - Math.sqrt(Math.pow(getLimit(chartData,"y","min",false),2))*0.1,
-					},
-					rangeMax: {
-						x: new Date().getTime(),
-						y: getLimit(chartData,"y","max",false) + getLimit(chartData,"y","max",false)*0.1,
-					},
-					speed: 0.1
-				},
-			},
-		},
-		annotation: {
-			drawTime: 'afterDatasetsDraw',
-			annotations: [{
-				//id: 'avgline',
-				type: ShowLines,
-				mode: 'horizontal',
-				scaleID: 'y-axis-0',
-				value: getAverage(chartData),
-				borderColor: "#fc8500",
-				borderWidth: 1,
-				borderDash: [5, 5],
-				label: {
-					backgroundColor: 'rgba(0,0,0,0.3)',
-					fontFamily: "sans-serif",
-					fontSize: 10,
-					fontStyle: "bold",
-					fontColor: "#fff",
-					xPadding: 6,
-					yPadding: 6,
-					cornerRadius: 6,
-					position: "center",
-					enabled: true,
-					xAdjust: 0,
-					yAdjust: 0,
-					content: "Avg=" + round(getAverage(chartData),3).toFixed(3)+txtunity,
-				}
-			},
-			{
-				//id: 'maxline',
-				type: ShowLines,
-				mode: 'horizontal',
-				scaleID: 'y-axis-0',
-				value: getLimit(chartData,"y","max",true),
-				borderColor: "#fc8500",
-				borderWidth: 1,
-				borderDash: [5, 5],
-				label: {
-					backgroundColor: 'rgba(0,0,0,0.3)',
-					fontFamily: "sans-serif",
-					fontSize: 10,
-					fontStyle: "bold",
-					fontColor: "#fff",
-					xPadding: 6,
-					yPadding: 6,
-					cornerRadius: 6,
-					position: "center",
-					enabled: true,
-					xAdjust: 0,
-					yAdjust: 0,
-					content: "Max=" + round(getLimit(chartData,"y","max",true),3).toFixed(3)+txtunity,
-				}
-			},
-			{
-				//id: 'minline',
-				type: ShowLines,
-				mode: 'horizontal',
-				scaleID: 'y-axis-0',
-				value: getLimit(chartData,"y","min",true),
-				borderColor: "#fc8500",
-				borderWidth: 1,
-				borderDash: [5, 5],
-				label: {
-					backgroundColor: 'rgba(0,0,0,0.3)',
-					fontFamily: "sans-serif",
-					fontSize: 10,
-					fontStyle: "bold",
-					fontColor: "#fff",
-					xPadding: 6,
-					yPadding: 6,
-					cornerRadius: 6,
-					position: "center",
-					enabled: true,
-					xAdjust: 0,
-					yAdjust: 0,
-					content: "Min=" + round(getLimit(chartData,"y","min",true),3).toFixed(3)+txtunity,
-				}
-			}]
-		}
-	};
-	var lineDataset = {
-		datasets: getDataSets(txtchartname, dataobject, chartChannels)
-	};
-	objchartname = new Chart(ctx, {
-		type: 'line',
-		data: lineDataset,
-		options: lineOptions
-	});
-	window["LineChart"+txtchartname]=objchartname;
-}
-
-function getDataSets(txtchartname, objdata, objchannels) {
-	var datasets = [];
-	colourname="#fc8500";
-	
-	for(var i = 0; i < objchannels.length; i++) {
-		var channeldata = objdata.filter(function(item) {
-			return item.Channel == objchannels[i];
-		}).map(function(d) {return {x: d.Time, y: d.Value}});
-		
-		datasets.push({ label: objchannels[i], data: channeldata, borderWidth: 1, pointRadius: 1, lineTension: 0, fill: false, backgroundColor: chartColours[i], borderColor: chartColours[i]});
-	}
-	return datasets;
-}
-
-function getLimit(datasetname,axis,maxmin,isannotation) {
-	var limit=0;
-	var values;
-	if(axis == "x"){
-		values = datasetname.map(function(o) { return o.x } );
-	}
-	else{
-		values = datasetname.map(function(o) { return o.y } );
-	}
-	
-	if(maxmin == "max"){
-		limit=Math.max.apply(Math, values);
-	}
-	else{
-		limit=Math.min.apply(Math, values);
-	}
-	if(maxmin == "max" && limit == 0 && isannotation == false){
-		limit = 1;
-	}
-	return limit;
-}
-
-function getAverage(datasetname) {
-	var total = 0;
-	for(var i = 0; i < datasetname.length; i++) {
-		total += (datasetname[i].y*1);
-	}
-	var avg = total / datasetname.length;
-	return avg;
-}
-
-function startAtZero(datasetname) {
-	var starty = false;
-	if(datasetname.indexOf("PstRS") != -1 || datasetname.indexOf("T3Out") != -1 || datasetname.indexOf("T4Out") != -1){
-		starty = true;
-	}
-	return starty;
-}
-
-function round(value, decimals) {
-	return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
-}
-
-function getRandomColor() {
-	var r = Math.floor(Math.random() * 255);
-	var g = Math.floor(Math.random() * 255);
-	var b = Math.floor(Math.random() * 255);
-	return "rgba(" + r + "," + g + "," + b + ", 1)";
-}
-
-function poolColors(a) {
-	var pool = [];
-	for(i = 0; i < a; i++) {
-		pool.push(getRandomColor());
-	}
-	return pool;
-}
-
-function SetRxTxColours(){
-	RxColours = poolColors(RxCount);
-	TxColours = poolColors(TxCount);
-}
-
-function GetMaxChannels(){
-	var RxCountArray = [];
-	var TxCountArray = [];
-	for(i = 0; i < metriclist.length; i++){
-		for (i2 = 0; i2 < chartlist.length; i2++) {
-			var varname="LineChart"+metriclist[i]+chartlist[i2];
-			var channelcount=window[varname].data.datasets.length;
-			if(varname.indexOf("Rx") != -1){
-				RxCountArray.push(channelcount);
-			}
-			else {
-				TxCountArray.push(channelcount);
-			}
-		}
-	}
-	RxCount = Math.max.apply(Math, RxCountArray);
-	TxCount = Math.max.apply(Math, TxCountArray);
-}
-
-function ToggleLines() {
-	if(ShowLines == ""){
-		ShowLines = "line";
-		SetCookie("ShowLines","line");
-	}
-	else {
-		ShowLines = "";
-		SetCookie("ShowLines","");
-	}
-	for(i = 0; i < metriclist.length; i++){
-		for (i2 = 0; i2 < chartlist.length; i2++) {
-			for (i3 = 0; i3 < 3; i3++) {
-				window["LineChart"+metriclist[i]+chartlist[i2]].options.annotation.annotations[i3].type=ShowLines;
-			}
-			window["LineChart"+metriclist[i]+chartlist[i2]].update();
-		}
-	}
-}
-
-function RedrawAllCharts() {
-	for(i = 0; i < metriclist.length; i++){
-		for (i2 = 0; i2 < chartlist.length; i2++) {
-			d3.csv("/ext/modmon/csv/"+metriclist[i]+chartlist[i2]+".htm").then(ProcessChart.bind(null,i,i2));
-		}
-	}
-}
-
-function ProcessChart(i1,i2,dataobject){
-	Draw_Chart(metriclist[i1]+chartlist[i2],titlelist[i1],measureunitlist[i1],timeunitlist[i2],intervallist[i2],dataobject);
-	currentNoCharts++;
-	
-	if(currentNoCharts == maxNoCharts) {
-		GetMaxChannels();
-		$j("#table_buttons2").after(BuildChannelFilterTable());
-		AddEventHandlers();
-	}
-}
-
-function GetCookie(cookiename) {
-	var s;
-	if ((s = cookie.get("mod_"+cookiename)) != null) {
-		return cookie.get("mod_"+cookiename);
-	}
-	else {
-		return "";
-	}
-}
-
-function SetCookie(cookiename,cookievalue) {
-	cookie.set("mod_"+cookiename, cookievalue, 31);
-}
-
-function SetCurrentPage(){
-	document.form.next_page.value = window.location.pathname.substring(1);
-	document.form.current_page.value = window.location.pathname.substring(1);
-}
-
-function initial(){
-	SetCurrentPage();
-	show_menu();
-	metriclist.reverse();
-	titlelist.reverse();
-	
-	for (i = 0; i < metriclist.length; i++) {
-		$j("#table_buttons2").after(BuildMetricTable(metriclist[i],titlelist[i]));
-	}
-	
-	metriclist.reverse();
-	titlelist.reverse();
-	
-	RedrawAllCharts();
-	SetModStatsTitle();
-}
-
-function reload() {
-	location.reload(true);
-}
-
-function ResetZoom(){
-	for(i = 0; i < metriclist.length; i++){
-		for (i2 = 0; i2 < chartlist.length; i2++) {
-			var chartobj = window["LineChart"+metriclist[i]+chartlist[i2]];
-			if(typeof chartobj === 'undefined' || chartobj === null) { continue; }
-			chartobj.resetZoom();
-		}
-	}
-}
-
-function DragZoom(button){
-	var drag = true;
-	var pan = false;
-	var buttonvalue = "";
-	if(button.value.indexOf("On") != -1){
-		drag = false;
-		pan = true;
-		buttonvalue = "Drag Zoom Off";
-	}
-	else {
-		drag = true;
-		pan = false;
-		buttonvalue = "Drag Zoom On";
-	}
-	
-	for(i = 0; i < metriclist.length; i++){
-		for (i2 = 0; i2 < chartlist.length; i2++) {
-			var chartobj = window["LineChart"+metriclist[i]+chartlist[i2]];
-			if(typeof chartobj === 'undefined' || chartobj === null) { continue; }
-			chartobj.options.plugins.zoom.zoom.drag = drag;
-			chartobj.options.plugins.zoom.pan.enabled = pan;
-			button.value = buttonvalue;
-			chartobj.update();
-		}
-	}
-}
-
-function ExportCSV() {
-	location.href = "ext/modmon/csv/modmondata.zip";
-	return 0;
-}
-
-function applyRule() {
-	var action_script_tmp = "start_modmon";
-	document.form.action_script.value = action_script_tmp;
-	var restart_time = document.form.action_wait.value*1;
-	showLoading();
-	document.form.submit();
-}
-
-function BuildMetricTable(name,title){
-	var charthtml = '<div style="line-height:10px;">&nbsp;</div>';
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_metric_'+name+'">';
-	charthtml+='<thead class="collapsibleparent" id="'+name+'">';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2">'+title+' (click to expand/collapse)</td>';
-	charthtml+='</tr>';
-	charthtml+='</thead>';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
-	charthtml+='<div class="collapsiblecontent">';
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">';
-	charthtml+='<tr>';
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
-	charthtml+='</tr>';
-	charthtml+='<thead class="collapsible" id="last24_'+name+'">';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2">Last 24 Hours (click to expand/collapse)</td>';
-	charthtml+='</tr>';
-	charthtml+='</thead>';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
-	charthtml+='<div class="collapsiblecontent">';
-	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'daily" height="300" /></div>';
-	charthtml+='</div>';
-	charthtml+='</td>';
-	charthtml+='</tr>';
-	charthtml+='</table>';
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">';
-	charthtml+='<thead class="collapsible" id="last7_'+name+'">';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2">Last 7 days (click to expand/collapse)</td>';
-	charthtml+='</tr>';
-	charthtml+='</thead>';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
-	charthtml+='<div class="collapsiblecontent">';
-	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'weekly" height="300" /></div>';
-	charthtml+='</div>';
-	charthtml+='</td>';
-	charthtml+='</tr>';
-	charthtml+='</table>';
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">';
-	charthtml+='<thead class="collapsible" id="last30_'+name+'">';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2">Last 30 days (click to expand/collapse)</td>';
-	charthtml+='</tr>';
-	charthtml+='</thead>';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
-	charthtml+='<div class="collapsiblecontent">';
-	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart'+name+'monthly" height="300" /></div>';
-	charthtml+='</div>';
-	charthtml+='</td>';
-	charthtml+='</tr>';
-	charthtml+='</table>';
-	charthtml+='</div>';
-	charthtml+='</td>';
-	charthtml+='</tr>';
-	charthtml+='</table>';
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
-	return charthtml;
-}
-
-function BuildChannelFilterTable(){
-	var channelhtml = '<div style="line-height:10px;">&nbsp;</div>';
-	channelhtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_filters">';
-	channelhtml+='<thead class="collapsibleparent" id="mod_filters">';
-	channelhtml+='<tr>';
-	channelhtml+='<td colspan="2">Chart Filters (click to expand/collapse)</td>';
-	channelhtml+='</tr>';
-	channelhtml+='</thead>';
-	channelhtml+='<tr>';
-	channelhtml+='<td colspan="2" align="center" style="padding: 0px;">';
-	channelhtml+='<div class="collapsiblecontent">';
-	channelhtml+='<div style="line-height:10px;">&nbsp;</div>';
-	channelhtml+=BuildChannelFilterRow("rx","Downstream Channels",RxCount);
-	channelhtml+=BuildChannelFilterRow("tx","Upstream Channels",TxCount);
-	channelhtml+='</div>';
-	channelhtml+='</td>';
-	channelhtml+='</tr>';
-	channelhtml+='</table>';
-	channelhtml+='<div style="line-height:10px;">&nbsp;</div>';
-	return channelhtml;
-}
-
-function BuildChannelFilterRow(rxtx,title,channelcount){
-	var channelhtml='';
-	channelhtml+='<div style="line-height:10px;">&nbsp;</div>';
-	channelhtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_'+rxtx+'">';
-	channelhtml+='<thead id="channel_table_'+rxtx+'stream">';
-	channelhtml+='<tr><td colspan="12">'+title+'</td></tr>';
-	channelhtml+='</thead>';
-	channelhtml+='<tr>';
-	channelhtml+='<td colspan="12" align="center" style="padding: 0px;">';
-	channelhtml+='<table width="100%" border="0" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border: 0px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<col style="width:60px;">';
-	channelhtml+='<tr>';
-	for (channelno = 1; channelno < channelcount+1; channelno++) {
-		channelhtml+='<td class="channelcell"><label class="radio"><input type="checkbox" onchange="ToggleDataset(this);" name="'+rxtx+'opt'+channelno+'" id="'+rxtx+'opt'+channelno+'" checked/>Ch. '+channelno+'</label></td>';
-		if(channelno % 12 == 0){
-			channelhtml+='</tr><tr>';
-		}
-	}
-	channelhtml+='</tr>';
-	channelhtml+='</table>';
-	channelhtml+='</div>';
-	channelhtml+='</td>';
-	channelhtml+='</tr>';
-	channelhtml+='<tr class="apply_gen" valign="top" height="35px" id="row_'+rxtx+'_buttons">';
-	channelhtml+='<td>';
-	channelhtml+='<input type="button" onclick="SetAllChannels(this,true);" value="Select all" class="button_gen" name="'+rxtx+'_button_select" id="'+rxtx+'_button_select">';
-	channelhtml+='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-	channelhtml+='<input type="button" onclick="SetAllChannels(this,false);" value="Clear all" class="button_gen" name="'+rxtx+'_button_clear" id="'+rxtx+'_button_clear">';
-	channelhtml+='</td></tr>';
-	channelhtml+='</table>';
-	return channelhtml;
-}
-
-function ToggleDataset(checkbox){
-	for(i = 0; i < metriclist.length; i++){
-		for (i2 = 0; i2 < chartlist.length; i2++) {
-			if(metriclist[i].toLowerCase().indexOf(checkbox.id.substring(0,2)) != -1){
-				window["LineChart"+metriclist[i]+chartlist[i2]].getDatasetMeta((checkbox.id.substring(5)*1)-1).hidden = ! checkbox.checked;
-				window["LineChart"+metriclist[i]+chartlist[i2]].update();
+var custom_settings;
+function LoadCustomSettings(){
+	custom_settings = <% get_custom_settings(); %>;
+	for (var prop in custom_settings){
+		if (Object.prototype.hasOwnProperty.call(custom_settings, prop)){
+			if(prop.indexOf("modmon") != -1 && prop.indexOf("modmon_version") == -1){
+				eval("delete custom_settings."+prop)
 			}
 		}
 	}
 }
-
-function SetAllChannels(button,setclear){
-	var rxtx = "";
-	var startindex = 0;
-	if(setclear == false){startindex=1;}
-	if(button.id.substring(0,2) == "rx"){rxtx="Rx";}
-	else{rxtx="Tx";}
-	if(startindex == 1){$j( "#"+rxtx.toLowerCase()+"opt1" ).prop("checked",true);}
-	for(i = 1 + startindex; i < window[rxtx+"Count"]+1; i++){
-		$j( "#"+rxtx.toLowerCase()+"opt"+i ).prop("checked",setclear);
-	}
-	for(i = 0; i < metriclist.length; i++){
-		for (i2 = 0; i2 < chartlist.length; i2++) {
-			if(metriclist[i].indexOf(rxtx) != -1){
-				for(i3 = 0; i3 < window[rxtx+"Count"]; i3++){
-					window["LineChart"+metriclist[i]+chartlist[i2]].getDatasetMeta(i3).hidden = ! $j( "#"+rxtx.toLowerCase()+"opt"+(i3+1) ).prop("checked");
-				}
-				window["LineChart"+metriclist[i]+chartlist[i2]].update();
-			}
-		}
-	}
-}
-
-function AddEventHandlers(){
-	var coll = document.getElementsByClassName("collapsible");
-	var i;
-	var height = 0;
-
-	for (i = 0; i < coll.length; i++) {
-		coll[i].addEventListener("click", function() {
-			this.classList.toggle("active");
-			var content = this.nextElementSibling.firstElementChild.firstElementChild.firstElementChild;
-			if (content.style.maxHeight){
-					content.style.maxHeight = null;
-					SetCookie(this.id,"collapsed");
-			} else {
-					content.style.maxHeight = content.scrollHeight + "px";
-					this.parentElement.parentElement.style.maxHeight = (this.parentElement.parentElement.style.maxHeight.substring(0,this.parentElement.parentElement.style.maxHeight.length-2)*1) + content.scrollHeight + "px";
-					SetCookie(this.id,"expanded");
-				}
-		});
-		
-		if(GetCookie(coll[i].id) == "expanded" || GetCookie(coll[i].id) == ""){
-			coll[i].click();
-		}
-		height=(coll[i].nextElementSibling.firstElementChild.firstElementChild.firstElementChild.style.maxHeight.substring(0,coll[i].nextElementSibling.firstElementChild.firstElementChild.firstElementChild.style.maxHeight.length-2)*1) + height + 21 + 10 + 10 + 10 + 10 + 10;
-	}
-	
-	var coll = document.getElementsByClassName("collapsibleparent");
-	var i;
-	
-	for (i = 0; i < coll.length; i++) {
-		coll[i].addEventListener("click", function() {
-			this.classList.toggle("active");
-			var content = this.nextElementSibling.firstElementChild.firstElementChild.firstElementChild;
-			if (content.style.maxHeight){
-				content.style.maxHeight = null;
-				SetCookie(this.id,"collapsed");
-			} else {
-				content.style.maxHeight = content.scrollHeight + "px";
-				SetCookie(this.id,"expanded");
-			}
-		});
-		if(GetCookie(coll[i].id) == "expanded" || GetCookie(coll[i].id) == ""){
-			coll[i].nextElementSibling.firstElementChild.firstElementChild.firstElementChild.style.maxHeight = height + "px";
-		} else {
-			coll[i].nextElementSibling.firstElementChild.firstElementChild.firstElementChild.style.maxHeight = null;
-		}
-	}
-}
-
+var RxCount,TxCount,RxColours,TxColours,$j=jQuery.noConflict(),maxNoCharts=18,currentNoCharts=0,ShowLines=GetCookie("ShowLines","string"),DragZoom=!0,ChartPan=!1,metriclist=["RxPwr","RxSnr","RxPstRs","TxPwr","TxT3Out","TxT4Out"],titlelist=["Downstream Power","Downstream SNR","Post-RS Errors","Upstream Power","T3 Timeouts","T4 Timeouts"],measureunitlist=["dBmV","dB","","dBmV","",""],chartlist=["daily","weekly","monthly"],timeunitlist=["hour","day","day"],intervallist=[24,7,30],chartColours=["rgba(24,113,65, 1)","rgba(205,117,81, 1)","rgba(230,55,90, 1)","rgba(5,206,61, 1)","rgba(131,4,176, 1)","rgba(196,145,14, 1)","rgba(169,229,70, 1)","rgba(25,64,183, 1)","rgba(23,153,199, 1)","rgba(223,46,248, 1)","rgba(240,92,214, 1)","rgba(123,137,211, 1)","rgba(141,68,215, 1)","rgba(74,210,128, 1)","rgba(223,247,240, 1)","rgba(226,27,93, 1)","rgba(253,78,222, 1)","rgba(63,192,102, 1)","rgba(82,66,162, 1)","rgba(65,190,78, 1)","rgba(154,113,118, 1)","rgba(222,98,201, 1)","rgba(198,186,137, 1)","rgba(178,45,245, 1)","rgba(95,245,50, 1)","rgba(247,142,18, 1)","rgba(103,152,205, 1)","rgba(39,104,180, 1)","rgba(132,165,5, 1)","rgba(8,249,253, 1)","rgba(227,170,207, 1)","rgba(196,70,76, 1)","rgba(11,197,73, 1)","rgba(127,50,202, 1)","rgba(33,248,170, 1)","rgba(17,216,225, 1)","rgba(176,123,12, 1)","rgba(181,111,105, 1)","rgba(104,122,233, 1)","rgba(217,102,107, 1)","rgba(188,174,88, 1)","rgba(30,224,236, 1)","rgba(169,39,247, 1)","rgba(251,86,116, 1)","rgba(217,163,80, 1)","rgba(155,120,34, 1)","rgba(82,124,118, 1)","rgba(102,89,62, 1)","rgba(48,126,7, 1)","rgba(48,118,188, 1)","rgba(223,246,227, 1)","rgba(152,11,129, 1)","rgba(66,97,241, 1)","rgba(32,113,78, 1)","rgba(83,142,226, 1)","rgba(210,105,250, 1)","rgba(125,115,7, 1)","rgba(198,37,71, 1)","rgba(253,99,153, 1)","rgba(171,225,78, 1)","rgba(66,82,121, 1)","rgba(5,82,115, 1)","rgba(22,62,141, 1)","rgba(135,59,161, 1)","rgba(20,223,59, 1)","rgba(17,206,99, 1)","rgba(142,162,133, 1)","rgba(206,76,155, 1)","rgba(131,87,41, 1)","rgba(199,234,37, 1)","rgba(176,94,156, 1)","rgba(13,58,185, 1)","rgba(147,19,178, 1)","rgba(48,203,55, 1)","rgba(250,31,116, 1)","rgba(138,9,168, 1)","rgba(90,208,244, 1)","rgba(128,110,93, 1)","rgba(222,202,95, 1)","rgba(189,78,184, 1)","rgba(122,41,65, 1)","rgba(243,176,73, 1)","rgba(23,123,71, 1)","rgba(209,50,12, 1)","rgba(253,218,100, 1)","rgba(214,18,185, 1)","rgba(31,254,215, 1)","rgba(191,53,224, 1)","rgba(117,197,238, 1)","rgba(183,123,104, 1)","rgba(88,34,248, 1)","rgba(124,157,92, 1)","rgba(76,59,160, 1)","rgba(143,235,139, 1)","rgba(59,85,112, 1)","rgba(233,54,148, 1)","rgba(244,176,124, 1)","rgba(246,246,104, 1)","rgba(169,171,44, 1)","rgba(240,3,14, 1)"];Chart.defaults.global.defaultFontColor="#CCC",Chart.Tooltip.positioners.cursor=function(a,b){return b};function keyHandler(a){27==a.keyCode&&($j(document).off("keydown"),ResetZoom())}$j(document).keydown(function(a){keyHandler(a)}),$j(document).keyup(function(){$j(document).keydown(function(a){keyHandler(a)})});function Draw_Chart_NoData(a){document.getElementById("divLineChart_"+a).width="730",document.getElementById("divLineChart_"+a).height="500",document.getElementById("divLineChart_"+a).style.width="730px",document.getElementById("divLineChart_"+a).style.height="500px";var b=document.getElementById("divLineChart_"+a).getContext("2d");b.save(),b.textAlign="center",b.textBaseline="middle",b.font="normal normal bolder 48px Arial",b.fillStyle="white",b.fillText("No data to display",365,250),b.restore()}function Draw_Chart(a,b,c){var d=getChartPeriod($j("#"+a+"_Period option:selected").val()),e=timeunitlist[$j("#"+a+"_Period option:selected").val()],f=intervallist[$j("#"+a+"_Period option:selected").val()],g=window[a+d];if("undefined"==typeof g||null===g)return void Draw_Chart_NoData(a);if(0==g.length)return void Draw_Chart_NoData(a);var h=[],j=[];for(let d=0;d<g.length;d++)h[g[d].Channel]||(j.push(g[d].Channel),h[g[d].Channel]=1);var k=g.map(function(a){return a.Channel}),l=g.map(function(a){return{x:a.Time,y:a.Value}}),m=window["LineChart_"+a],n=getTimeFormat($j("#Time_Format option:selected").val(),"axis"),o=getTimeFormat($j("#Time_Format option:selected").val(),"tooltip");factor=0,"hour"==e?factor=3600000:"day"==e&&(factor=86400000),m!=null&&m.destroy();var p=document.getElementById("divLineChart_"+a).getContext("2d"),q={segmentShowStroke:!1,segmentStrokeColor:"#000",animationEasing:"easeOutQuart",animationSteps:100,maintainAspectRatio:!1,animateScale:!0,hover:{mode:"point"},legend:{display:!0,position:"bottom",labels:{boxWidth:10,fontSize:10}},title:{display:!0,text:b},tooltips:{callbacks:{title:function(a){return moment(a[0].xLabel,"X").format(o)},label:function(a,b){return b.datasets[a.datasetIndex].label+": "+round(b.datasets[a.datasetIndex].data[a.index].y,3).toFixed(3)+" "+c}},mode:"point",position:"cursor",intersect:!0},scales:{xAxes:[{type:"time",gridLines:{display:!0,color:"#282828"},ticks:{display:!0,min:moment().subtract(f,e+"s")},time:{parser:"X",unit:e,stepSize:1,displayFormats:n}}],yAxes:[{gridLines:{display:!1,color:"#282828"},scaleLabel:{display:!1,labelString:b},ticks:{display:!0,beginAtZero:startAtZero(a),callback:function(a){return round(a,3).toFixed(3)+" "+c}}}]},plugins:{zoom:{pan:{enabled:ChartPan,mode:"xy",rangeMin:{x:new Date().getTime()-factor*f,y:getLimit(l,"y","min",!1)-.1*Math.sqrt(Math.pow(getLimit(l,"y","min",!1),2))},rangeMax:{x:new Date().getTime(),y:getLimit(l,"y","max",!1)+.1*getLimit(l,"y","max",!1)}},zoom:{enabled:!0,drag:DragZoom,mode:"xy",rangeMin:{x:new Date().getTime()-factor*f,y:getLimit(l,"y","min",!1)-.1*Math.sqrt(Math.pow(getLimit(l,"y","min",!1),2))},rangeMax:{x:new Date().getTime(),y:getLimit(l,"y","max",!1)+.1*getLimit(l,"y","max",!1)},speed:.1}}},annotation:{drawTime:"afterDatasetsDraw",annotations:[{type:ShowLines,mode:"horizontal",scaleID:"y-axis-0",value:getAverage(l),borderColor:"#fc8500",borderWidth:1,borderDash:[5,5],label:{backgroundColor:"rgba(0,0,0,0.3)",fontFamily:"sans-serif",fontSize:10,fontStyle:"bold",fontColor:"#fff",xPadding:6,yPadding:6,cornerRadius:6,position:"center",enabled:!0,xAdjust:0,yAdjust:0,content:"Avg="+round(getAverage(l),3).toFixed(3)+c}},{type:ShowLines,mode:"horizontal",scaleID:"y-axis-0",value:getLimit(l,"y","max",!0),borderColor:"#fc8500",borderWidth:1,borderDash:[5,5],label:{backgroundColor:"rgba(0,0,0,0.3)",fontFamily:"sans-serif",fontSize:10,fontStyle:"bold",fontColor:"#fff",xPadding:6,yPadding:6,cornerRadius:6,position:"right",enabled:!0,xAdjust:15,yAdjust:0,content:"Max="+round(getLimit(l,"y","max",!0),3).toFixed(3)+c}},{type:ShowLines,mode:"horizontal",scaleID:"y-axis-0",value:getLimit(l,"y","min",!0),borderColor:"#fc8500",borderWidth:1,borderDash:[5,5],label:{backgroundColor:"rgba(0,0,0,0.3)",fontFamily:"sans-serif",fontSize:10,fontStyle:"bold",fontColor:"#fff",xPadding:6,yPadding:6,cornerRadius:6,position:"left",enabled:!0,xAdjust:15,yAdjust:0,content:"Min="+round(getLimit(l,"y","min",!0),3).toFixed(3)+c}}]}},r={datasets:getDataSets(a,g,j)};m=new Chart(p,{type:"line",data:r,options:q}),window["LineChart_"+a]=m}function getDataSets(a,b,c){var d=[];colourname="#fc8500";for(var e,f=0;f<c.length;f++)e=b.filter(function(a){return a.Channel==c[f]}).map(function(a){return{x:a.Time,y:a.Value}}),d.push({label:c[f],data:e,borderWidth:1,pointRadius:1,lineTension:0,fill:!1,backgroundColor:chartColours[f],borderColor:chartColours[f]});return d}function getLimit(a,b,c,d){var e,f=0;return e="x"==b?a.map(function(a){return a.x}):a.map(function(a){return a.y}),f="max"==c?Math.max.apply(Math,e):Math.min.apply(Math,e),"max"==c&&0==f&&!1==d&&(f=1),f}function getAverage(a){for(var b=0,c=0;c<a.length;c++)b+=1*a[c].y;var d=b/a.length;return d}function startAtZero(a){var b=!1;return(-1!=a.indexOf("PstRS")||-1!=a.indexOf("T3Out")||-1!=a.indexOf("T4Out"))&&(b=!0),b}function round(a,b){return+(Math.round(a+"e"+b)+"e-"+b)}function getRandomColor(){var a=Math.floor(255*Math.random()),c=Math.floor(255*Math.random()),d=Math.floor(255*Math.random());return"rgba("+a+","+c+","+d+", 1)"}function poolColors(b){var a=[];for(i=0;i<b;i++)a.push(getRandomColor());return a}function SetRxTxColours(){RxColours=poolColors(RxCount),TxColours=poolColors(TxCount)}function GetMaxChannels(){var a=[],b=[];for(i=0;i<metriclist.length;i++){var c="LineChart_"+metriclist[i],d=window[c].data.datasets.length;-1==c.indexOf("Rx")?b.push(d):a.push(d)}RxCount=Math.max.apply(Math,a),TxCount=Math.max.apply(Math,b)}function ToggleLines(){for(""==ShowLines?(ShowLines="line",SetCookie("ShowLines","line")):(ShowLines="",SetCookie("ShowLines","")),i=0;i<metriclist.length;i++){for(i3=0;3>i3;i3++)window["LineChart_"+metriclist[i]].options.annotation.annotations[i3].type=ShowLines;window["LineChart_"+metriclist[i]].update()}}function changeChart(a){value=1*a.value,name=a.id.substring(0,a.id.indexOf("_")),SetCookie(a.id,value),"RxPwr"==name?Draw_Chart("RxPwr",titlelist[0],measureunitlist[0]):"RxSnr"==name?Draw_Chart("RxSnr",titlelist[1],measureunitlist[1]):"RxPstRs"==name?Draw_Chart("RxPstRs",titlelist[2],measureunitlist[2]):"TxPwr"==name?Draw_Chart("TxPwr",titlelist[2],measureunitlist[3]):"TxT3Out"==name?Draw_Chart("TxT3Out",titlelist[4],measureunitlist[4]):"TxT4Out"==name&&Draw_Chart("TxT4Out",titlelist[5],measureunitlist[5])}function RedrawAllCharts(){for(i=0;i<metriclist.length;i++)for(i2=0;i2<chartlist.length;i2++)d3.csv("/ext/modmon/csv/"+metriclist[i]+chartlist[i2]+".htm").then(ProcessChart.bind(null,i,i2))}function changeAllCharts(a){for(value=1*a.value,name=a.id.substring(0,a.id.indexOf("_")),SetCookie(a.id,value),i=0;i<metriclist.length;i++)Draw_Chart(metriclist[i],titlelist[i],measureunitlist[i])}function getTimeFormat(a,b){var c;return"axis"==b?0==a?c={millisecond:"HH:mm:ss.SSS",second:"HH:mm:ss",minute:"HH:mm",hour:"HH:mm"}:1==a&&(c={millisecond:"h:mm:ss.SSS A",second:"h:mm:ss A",minute:"h:mm A",hour:"h A"}):"tooltip"==b&&(0==a?c="YYYY-MM-DD HH:mm:ss":1==a&&(c="YYYY-MM-DD h:mm:ss A")),c}function ProcessChart(a,b,c){if(window[metriclist[a]+chartlist[b]]=c,currentNoCharts++,currentNoCharts==maxNoCharts){for(i=0;i<metriclist.length;i++)$j("#"+metriclist[i]+"_Period").val(GetCookie(metriclist[i]+"_Period","number")),Draw_Chart(metriclist[i],titlelist[i],measureunitlist[i]);GetMaxChannels(),$j("#table_buttons2").after(BuildChannelFilterTable()),AddEventHandlers()}}function GetCookie(a,b){var c;if(null!=(c=cookie.get("mod_"+a)))return cookie.get("mod_"+a);return"string"==b?"":"number"==b?0:void 0}function SetCookie(a,b){cookie.set("mod_"+a,b,31)}$j.fn.serializeObject=function(){var b=custom_settings,c=this.serializeArray();return $j.each(c,function(){void 0!==b[this.name]&&-1!=this.name.indexOf("modmon")&&-1==this.name.indexOf("version")?(!b[this.name].push&&(b[this.name]=[b[this.name]]),b[this.name].push(this.value||"")):-1!=this.name.indexOf("modmon")&&-1==this.name.indexOf("version")&&(b[this.name]=this.value||"")}),b};function SetCurrentPage(){document.form.next_page.value=window.location.pathname.substring(1),document.form.current_page.value=window.location.pathname.substring(1)}function initial(){SetCurrentPage(),LoadCustomSettings(),show_menu(),get_conf_file(),$j("#Time_Format").val(GetCookie("Time_Format","number")),ScriptUpdateLayout(),SetModStatsTitle();var a="";for(i=0;i<metriclist.length;i++)a+=BuildMetricTable(metriclist[i],titlelist[i],i);$j("#table_buttons2").after(a),RedrawAllCharts()}function ScriptUpdateLayout(){var a=GetVersionNumber("local"),b=GetVersionNumber("server");$j("#scripttitle").text($j("#scripttitle").text()+" - "+a),$j("#modmon_version_local").text(a),a!=b&&"N/A"!=b&&($j("#modmon_version_server").text("Updated version available: "+b),showhide("btnChkUpdate",!1),showhide("modmon_version_server",!0),showhide("btnDoUpdate",!0))}function reload(){location.reload(!0)}function getChartPeriod(a){var b="daily";return 0==a?b="daily":1==a?b="weekly":2==a&&(b="monthly"),b}function ResetZoom(){for(i=0;i<metriclist.length;i++){var a=window["LineChart_"+metriclist[i]];"undefined"!=typeof a&&null!==a&&a.resetZoom()}}function ToggleDragZoom(a){var b=!0,c=!1,d="";for(-1==a.value.indexOf("On")?(b=!0,c=!1,DragZoom=!0,ChartPan=!1,d="Drag Zoom On"):(b=!1,c=!0,DragZoom=!1,ChartPan=!0,d="Drag Zoom Off"),i=0;i<metriclist.length;i++){var e=window["LineChart_"+metriclist[i]];"undefined"!=typeof e&&null!==e&&(e.options.plugins.zoom.zoom.drag=b,e.options.plugins.zoom.pan.enabled=c,a.value=d,e.update())}}function ExportCSV(){return location.href="ext/modmon/csv/modmondata.zip",0}function update_status(){$j.ajax({url:"/ext/modmon/detect_update.js",dataType:"script",timeout:3e3,error:function(){setTimeout("update_status();",1e3)},success:function(){"InProgress"==updatestatus?setTimeout("update_status();",1e3):(document.getElementById("imgChkUpdate").style.display="none",showhide("modmon_version_server",!0),"None"==updatestatus?($j("#modmon_version_server").text("No update available"),showhide("btnChkUpdate",!0),showhide("btnDoUpdate",!1)):($j("#modmon_version_server").text("Updated version available: "+updatestatus),showhide("btnChkUpdate",!1),showhide("btnDoUpdate",!0)))}})}function CheckUpdate(){showhide("btnChkUpdate",!1),document.formChkVer.action_script.value="start_modmoncheckupdate",document.formChkVer.submit(),document.getElementById("imgChkUpdate").style.display="",setTimeout("update_status();",2e3)}function DoUpdate(){document.form.action_script.value="start_modmondoupdate";document.form.action_wait.value=20,showLoading(),document.form.submit()}function applyRule(){document.getElementById("amng_custom").value=JSON.stringify($j("form").serializeObject());document.form.action_script.value="start_modmonconfig";document.form.action_wait.value=5,showLoading(),document.form.submit()}function UpdateStats(){document.form.action_wait.value=10,showLoading(),document.form.submit()}function GetVersionNumber(a){var b;return"local"==a?b=custom_settings.modmon_version_local:"server"==a&&(b=custom_settings.modmon_version_server),"undefined"==typeof b||null==b?"N/A":b}function get_conf_file(){$j.ajax({url:"/ext/modmon/config.htm",dataType:"text",error:function(){setTimeout("get_conf_file();",1e3)},success:function(a){var b=a.split("\n");b=b.filter(Boolean);for(var c=0;c<b.length;c++)-1==b[c].indexOf("OUTPUTDATAMODE")?-1==b[c].indexOf("OUTPUTTIMEMODE")?-1==b[c].indexOf("STORAGELOCATION")?-1!=b[c].indexOf("FIXTXPWR")&&(document.form.modmon_fixtxpwr.value=b[c].split("=")[1].replace(/(\r\n|\n|\r)/gm,"")):document.form.modmon_storagelocation.value=b[c].split("=")[1].replace(/(\r\n|\n|\r)/gm,""):document.form.modmon_outputtimemode.value=b[c].split("=")[1].replace(/(\r\n|\n|\r)/gm,""):document.form.modmon_outputdatamode.value=b[c].split("=")[1].replace(/(\r\n|\n|\r)/gm,"")}})}function BuildMetricTable(a,b,c){var d="<div style=\"line-height:10px;\">&nbsp;</div>";return 0==c&&(d+="<table width=\"100%\" border=\"1\" align=\"center\" cellpadding=\"4\" cellspacing=\"0\" bordercolor=\"#6b8fa3\" class=\"FormTable\">",d+="<thead class=\"collapsible-jquery\" id=\"table_charts\">",d+="<tr>",d+="<td>Charts (click to expand/collapse)</td>",d+="</tr>",d+="</thead>",d+="<tr><td align=\"center\" style=\"padding: 0px;\">"),d+="<table width=\"100%\" border=\"1\" align=\"center\" cellpadding=\"4\" cellspacing=\"0\" bordercolor=\"#6b8fa3\" class=\"FormTable\" id=\"table_metric_"+a+"\">",d+="<thead class=\"collapsible-jquery\" id=\""+a+"\">",d+="<tr>",d+="<td colspan=\"2\">"+b+" (click to expand/collapse)</td>",d+="</tr>",d+="</thead>",d+="<tr class=\"even\">",d+="<th width=\"40%\">Period to display</th>",d+="<td>",d+="<select style=\"width:125px\" class=\"input_option\" onchange=\"changeChart(this)\" id=\""+a+"_Period\">",d+="<option value=\"0\">Last 24 hours</option>",d+="<option value=\"1\">Last 7 days</option>",d+="<option value=\"2\">Last 30 days</option>",d+="</select>",d+="</td>",d+="</tr>",d+="<tr>",d+="<td colspan=\"2\" align=\"center\" style=\"padding: 0px;\">",d+="<div style=\"background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;\"><canvas id=\"divLineChart_"+a+"\" height=\"500\" /></div>",d+="</td>",d+="</tr>",d+="</table>",c==metriclist.length-1&&(d+="</td>",d+="</tr>",d+="</table>"),d}function BuildChannelFilterTable(){var a="<div style=\"line-height:10px;\">&nbsp;</div>";return a+="<table width=\"100%\" border=\"1\" align=\"center\" cellpadding=\"4\" cellspacing=\"0\" bordercolor=\"#6b8fa3\" class=\"FormTable\" id=\"table_filters\">",a+="<thead class=\"collapsible-jquery\" id=\"mod_filters\">",a+="<tr>",a+="<td colspan=\"2\">Chart Filters (click to expand/collapse)</td>",a+="</tr>",a+="</thead>",a+="<tr>",a+="<td colspan=\"2\" align=\"center\" style=\"padding: 0px;\">",a+=BuildChannelFilterRow("rx","Downstream Channels",RxCount),a+=BuildChannelFilterRow("tx","Upstream Channels",TxCount),a+="</td>",a+="</tr>",a+="</table>",a}function BuildChannelFilterRow(a,b,c){var d="";for(d+="<div style=\"line-height:10px;\">&nbsp;</div>",d+="<table width=\"100%\" border=\"1\" align=\"center\" cellpadding=\"4\" cellspacing=\"0\" bordercolor=\"#6b8fa3\" class=\"FormTable\" id=\"table_"+a+"\">",d+="<thead id=\"channel_table_"+a+"stream\">",d+="<tr><td colspan=\"12\">"+b+"</td></tr>",d+="</thead>",d+="<tr>",d+="<td colspan=\"12\" align=\"center\" style=\"padding: 0px;\">",d+="<table width=\"100%\" border=\"0\" align=\"center\" cellpadding=\"4\" cellspacing=\"0\" bordercolor=\"#6b8fa3\" class=\"FormTable\" style=\"border: 0px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<col style=\"width:60px;\">",d+="<tr>",channelno=1;channelno<c+1;channelno++)d+="<td class=\"channelcell\"><label class=\"radio\"><input type=\"checkbox\" onchange=\"ToggleDataset(this);\" name=\""+a+"opt"+channelno+"\" id=\""+a+"opt"+channelno+"\" checked/>Ch. "+channelno+"</label></td>",0==channelno%12&&(d+="</tr><tr>");return d+="</tr>",d+="</table>",d+="</div>",d+="</td>",d+="</tr>",d+="<tr class=\"apply_gen\" valign=\"top\" height=\"35px\" id=\"row_"+a+"_buttons\">",d+="<td>",d+="<input type=\"button\" onclick=\"SetAllChannels(this,true);\" value=\"Select all\" class=\"button_gen\" name=\""+a+"_button_select\" id=\""+a+"_button_select\">",d+="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",d+="<input type=\"button\" onclick=\"SetAllChannels(this,false);\" value=\"Clear all\" class=\"button_gen\" name=\""+a+"_button_clear\" id=\""+a+"_button_clear\">",d+="</td></tr>",d+="</table>",d}function ToggleDataset(a){for(i=0;i<metriclist.length;i++)-1!=metriclist[i].toLowerCase().indexOf(a.id.substring(0,2))&&(window["LineChart_"+metriclist[i]].getDatasetMeta(1*a.id.substring(5)-1).hidden=!a.checked,window["LineChart_"+metriclist[i]].update())}function SetAllChannels(a,b){var c="",d=0;for(!1==b&&(d=1),c="rx"==a.id.substring(0,2)?"Rx":"Tx",1==d&&$j("#"+c.toLowerCase()+"opt1").prop("checked",!0),i=1+d;i<window[c+"Count"]+1;i++)$j("#"+c.toLowerCase()+"opt"+i).prop("checked",b);for(i=0;i<metriclist.length;i++)if(-1!=metriclist[i].indexOf(c)){for(i3=0;i3<window[c+"Count"];i3++)window["LineChart_"+metriclist[i]].getDatasetMeta(i3).hidden=!$j("#"+c.toLowerCase()+"opt"+(i3+1)).prop("checked");window["LineChart_"+metriclist[i]].update()}}function AddEventHandlers(){$j(".collapsible-jquery").click(function(){$j(this).siblings().toggle("fast",function(){"none"==$j(this).css("display")?SetCookie($j(this).siblings()[0].id,"collapsed"):SetCookie($j(this).siblings()[0].id,"expanded")})}),$j(".collapsible-jquery").each(function(){"collapsed"==GetCookie($j(this)[0].id,"string")?$j(this).siblings().toggle(!1):$j(this).siblings().toggle(!0)})}
 </script>
 </head>
 <body onload="initial();" onunload="return unload_body();">
@@ -843,11 +159,99 @@ function AddEventHandlers(){
 <tr bgcolor="#4D595D">
 <td valign="top">
 <div>&nbsp;</div>
-<div class="formfonttitle" id="statstitle">Cable Modem Stats</div>
-<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
-<tr class="apply_gen" valign="top" height="35px" id="row_buttons">
-<td style="background-color:rgb(77, 89, 93);border:0px;">
-<input type="button" onclick="DragZoom(this);" value="Drag Zoom On" class="button_gen" name="button">
+<div class="formfonttitle" id="scripttitle" style="text-align:center;">modmon</div>
+<div id="statstitle" style="text-align:center;">Stats last updated:</div>
+<div style="margin:10px 0 10px 5px;" class="splitLine"></div>
+<div class="formfontdesc">modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries.</div>
+<table width="100%" border="1" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
+<thead class="collapsible-jquery" id="scripttools">
+<tr><td colspan="2">Utilities (click to expand/collapse)</td></tr>
+</thead>
+<tr>
+<th width="20%">Version information</th>
+<td>
+<span id="modmon_version_local" style="color:#FFFFFF;"></span>
+&nbsp;&nbsp;&nbsp;
+<span id="modmon_version_server" style="display:none;">Update version</span>
+&nbsp;&nbsp;&nbsp;
+<input type="button" class="button_gen" onclick="CheckUpdate();" value="Check" id="btnChkUpdate">
+<img id="imgChkUpdate" style="display:none;vertical-align:middle;" src="images/InternetScan.gif"/>
+<input type="button" class="button_gen" onclick="DoUpdate();" value="Update" id="btnDoUpdate" style="display:none;">
+&nbsp;&nbsp;&nbsp;
+</td>
+</tr>
+<tr>
+<th width="20%">Update stats</th>
+<td>
+<input type="button" onclick="UpdateStats();" value="Update stats" class="button_gen" name="btnUpdateStats">
+</td>
+</tr>
+<tr>
+<th width="20%">Export</th>
+<td>
+<input type="button" onclick="ExportCSV();" value="Export to CSV" class="button_gen" name="btnExport">
+</td>
+</tr>
+</table>
+<div style="line-height:10px;">&nbsp;</div>
+<table width="100%" border="1" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_config">
+<thead class="collapsible-jquery" id="scriptconfig">
+<tr><td colspan="2">Configuration (click to expand/collapse)</td></tr>
+</thead>
+<tr class="even" id="rowdataoutput">
+<th width="40%">Data Output Mode (for CSV export)</th>
+<td class="settingvalue">
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputdatamode" id="modmon_dataoutput_average" class="input" value="average" checked>Average
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputdatamode" id="modmon_dataoutput_raw" class="input" value="raw">Raw
+</td>
+</tr>
+<tr class="even" id="rowtimeoutput">
+<th width="40%">Time Output Mode (for CSV export)</th>
+<td class="settingvalue">
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputtimemode" id="modmon_timeoutput_non-unix" class="input" value="non-unix" checked>Non-Unix
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputtimemode" id="modmon_timeoutput_unix" class="input" value="unix">Unix
+</td>
+</tr>
+<tr class="even" id="rowstorageloc">
+<th width="40%">Data Storage Location</th>
+<td class="settingvalue">
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_storagelocation" id="modmon_storageloc_jffs" class="input" value="jffs" checked>JFFS
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_storagelocation" id="modmon_storageloc_usb" class="input" value="usb">USB
+</td>
+</tr>
+
+<tr class="even" id="rowfixtxpwr">
+<th width="40%">Fix Upstream Power level reporting</th>
+<td class="settingvalue">
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_fixtxpwr" id="modmon_fixtxpwr_true" class="input" value="true" checked>True
+<input autocomplete="off" autocapitalize="off" type="radio" name="modmon_fixtxpwr" id="modmon_fixtxpwr_false" class="input" value="false">False
+<span style="color:#FFCC00;">(reduce by 10x, needed in newer Hub 3 firmware)</span>
+</td>
+</tr>
+
+<tr class="apply_gen" valign="top" height="35px">
+<td colspan="2" style="background-color:rgb(77, 89, 93);">
+<input type="button" onclick="applyRule();" value="Save" class="button_gen" name="button">
+</td>
+</tr>
+</table>
+<div style="line-height:10px;">&nbsp;</div>
+<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons2">
+<thead class="collapsible-jquery" id="charttools">
+<tr><td colspan="2">Chart Display Options (click to expand/collapse)</td></tr>
+</thead>
+<tr>
+<th width="20%"><span style="color:#FFFFFF;">Time format</span><br /><span style="color:#FFFFFF;">for tooltips and Last 24h chart axis</span></th>
+<td>
+<select style="width:100px" class="input_option" onchange="changeAllCharts(this)" id="Time_Format">
+<option value="0">24h</option>
+<option value="1">12h</option>
+</select>
+</td>
+</tr>
+<tr class="apply_gen" valign="top">
+<td style="background-color:rgb(77, 89, 93);" colspan="2">
+<input type="button" onclick="ToggleDragZoom(this);" value="Drag Zoom On" class="button_gen" name="button">
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <input type="button" onclick="ResetZoom();" value="Reset Zoom" class="button_gen" name="button">
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -855,16 +259,8 @@ function AddEventHandlers(){
 </td>
 </tr>
 </table>
-<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons2">
-<tr class="apply_gen" valign="top" height="35px">
-<td style="background-color:rgb(77, 89, 93);border:0px;">
-<input type="button" onclick="applyRule();" value="Update stats now" class="button_gen" name="button">
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<input type="button" onclick="ExportCSV();" value="Export to CSV" class="button_gen" name="button">
-</td>
-</tr>
+
 <!-- Chart legend filters inserted here -->
-</table>
 <!-- Charts inserted here -->
 </td>
 </tr>
@@ -877,7 +273,14 @@ function AddEventHandlers(){
 </tr>
 </table>
 </form>
-<div id="footer">
-</div>
+<form method="post" name="formChkVer" action="/start_apply.htm" target="hidden_frame">
+<input type="hidden" name="productid" value="<% nvram_get("productid"); %>">
+<input type="hidden" name="current_page" value="">
+<input type="hidden" name="next_page" value="">
+<input type="hidden" name="action_mode" value="apply">
+<input type="hidden" name="action_script" value="">
+<input type="hidden" name="action_wait" value="">
+</form>
+<div id="footer"></div>
 </body>
 </html>
