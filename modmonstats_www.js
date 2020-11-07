@@ -632,7 +632,7 @@ function CheckUpdate(){
 function DoUpdate(){
 	var action_script_tmp = "start_modmondoupdate";
 	document.form.action_script.value = action_script_tmp;
-	var restart_time = 20;
+	var restart_time = 10;
 	document.form.action_wait.value = restart_time;
 	showLoading();
 	document.form.submit();
