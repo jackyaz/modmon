@@ -189,7 +189,7 @@ var RxCount,TxCount,RxColours,TxColours,$j=jQuery.noConflict(),maxNoCharts=18,cu
 <tr><td colspan="2">Configuration (click to expand/collapse)</td></tr>
 </thead>
 <tr class="even" id="rowdataoutput">
-<th width="40%">Data Output Mode (for CSV export)</th>
+<th width="40%">Data Output Mode (for weekly and monthly charts)</th>
 <td class="settingvalue">
 <input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputdatamode" id="modmon_dataoutput_average" class="input" value="average" checked>Average
 <input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputdatamode" id="modmon_dataoutput_raw" class="input" value="raw">Raw
