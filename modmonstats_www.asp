@@ -189,14 +189,14 @@ var RxCount,TxCount,RxColours,TxColours,$j=jQuery.noConflict(),maxNoCharts=18,cu
 <tr><td colspan="2">Configuration (click to expand/collapse)</td></tr>
 </thead>
 <tr class="even" id="rowdataoutput">
-<th width="40%">Data Output Mode (for weekly and monthly charts)</th>
+<th width="40%">Data Output Mode<br/><span style="color:#FFCC00;">(for weekly and monthly charts)</span></th>
 <td class="settingvalue">
 <input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputdatamode" id="modmon_dataoutput_average" class="input" value="average" checked>Average
 <input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputdatamode" id="modmon_dataoutput_raw" class="input" value="raw">Raw
 </td>
 </tr>
 <tr class="even" id="rowtimeoutput">
-<th width="40%">Time Output Mode (for CSV export)</th>
+<th width="40%">Time Output Mode<br/><span style="color:#FFCC00;">(for CSV export)</span></th>
 <td class="settingvalue">
 <input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputtimemode" id="modmon_timeoutput_non-unix" class="input" value="non-unix" checked>Non-Unix
 <input autocomplete="off" autocapitalize="off" type="radio" name="modmon_outputtimemode" id="modmon_timeoutput_unix" class="input" value="unix">Unix
