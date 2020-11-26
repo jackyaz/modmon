@@ -297,6 +297,7 @@ Create_Dirs(){
 Create_Symlinks(){
 	rm -rf "${SCRIPT_WEB_DIR:?}/"* 2>/dev/null
 	
+	ln -s /tmp/detect_modmon.js "$SCRIPT_WEB_DIR/detect_modmon.js" 2>/dev/null
 	ln -s "$SCRIPT_STORAGE_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
 	
 	ln -s "$SCRIPT_CONF" "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
@@ -571,7 +572,7 @@ WriteStats_ToJS(){
 	echo "function $3(){" > "$2"
 	html='document.getElementById("'"$4"'").innerHTML="'
 	while IFS='' read -r line || [ -n "$line" ]; do
-		html="$html""$line""\\r\\n"
+		html="$html$line\r\\n"
 	done < "$1"
 	html="$html"'"'
 	printf "%s\\r\\n}\\r\\n" "$html" >> "$2"
@@ -619,6 +620,8 @@ Get_Modem_Stats(){
 	
 	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 	
+	echo 'var modmonstatus = "InProgress";' > /tmp/detect_modmon.js
+	
 	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 	
 	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
@@ -649,6 +652,8 @@ Get_Modem_Stats(){
 		echo "Stats last updated: $timenowfriendly" > "/tmp/modstatstitle.txt"
 		WriteStats_ToJS /tmp/modstatstitle.txt "$SCRIPT_STORAGE_DIR/modstatstext.js" SetModStatsTitle statstitle
 		Print_Output false "Cable modem stats successfully retrieved" "$PASS"
+		
+		echo 'var modmonstatus = "Done";' > /tmp/detect_modmon.js
 		
 		rm -f /tmp/modmon-stats.sql
 		rm -f /tmp/modstatstitle.txt
@@ -737,7 +742,7 @@ Generate_CSVs(){
 		opkg update
 		opkg install p7zip
 	fi
-	/opt/bin/7z a -y -bsp0 -bso0 -tzip "/tmp/""$SCRIPT_NAME""data.zip" "$tmpoutputdir/*"
+	/opt/bin/7z a -y -bsp0 -bso0 -tzip "/tmp/${SCRIPT_NAME}data.zip" "$tmpoutputdir/*"
 	mv "/tmp/${SCRIPT_NAME}data.zip" "$CSV_OUTPUT_DIR"
 	rm -rf "$tmpoutputdir"
 }
