@@ -721,17 +721,73 @@ Generate_CSVs(){
 	
 	rm -f /tmp/modmon-stats.sql
 	
+	{
+		echo ".mode csv"
+		echo ".headers on"
+		echo ".output /tmp/CompleteResults_RxTimes.htm"
+		echo "SELECT [Timestamp] FROM modstats_RxPwr WHERE [Timestamp] >= ($timenow - 86400*30)"
+	} > /tmp/modmon-complete.sql
+	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
+	
+	{
+		echo ".mode csv"
+		echo ".headers on"
+		echo ".output /tmp/CompleteResults_TxTimes.htm"
+		echo "SELECT [Timestamp] FROM modstats_TxPwr WHERE [Timestamp] >= ($timenow - 86400*30)"
+	} > /tmp/modmon-complete.sql
+	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
+	
+	{
+		echo ".mode csv"
+		echo ".headers on"
+		echo ".output /tmp/CompleteResults_RxChannels.htm"
+		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_RxPwr WHERE [Timestamp] >= ($timenow - 86400*30)"
+	} > /tmp/modmon-complete.sql
+	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
+	
+	{
+		echo ".mode csv"
+		echo ".headers on"
+		echo ".output /tmp/CompleteResults_TxChannels.htm"
+		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_TxPwr WHERE [Timestamp] >= ($timenow - 86400*30)"
+	} > /tmp/modmon-complete.sql
+	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
+	
+	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+	for metric in $metriclist; do
+	{
+		echo ".mode csv"
+		echo ".headers on"
+		echo ".output /tmp/CompleteResults_$metric.htm"
+		echo "SELECT [Measurement] $metric FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*30)"
+	} > /tmp/modmon-complete.sql
+	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
+	done
+	
+	rm -f /tmp/modmon-complete.sql
+	
+	dos2unix /tmp/*.htm
+	
+	if [ ! -f /opt/bin/paste ]; then
+		opkg update
+		opkg install coreutils-paste
+	fi
+	paste -d ',' /tmp/CompleteResults_RxTimes.htm /tmp/CompleteResults_RxChannels.htm /tmp/CompleteResults_RxPwr.htm /tmp/CompleteResults_RxSnr.htm /tmp/CompleteResults_RxPstRs.htm > "$CSV_OUTPUT_DIR/CompleteResults_Rx.htm"
+	paste -d ',' /tmp/CompleteResults_TxTimes.htm /tmp/CompleteResults_TxChannels.htm /tmp/CompleteResults_TxPwr.htm /tmp/CompleteResults_TxT3Out.htm /tmp/CompleteResults_TxT4Out.htm > "$CSV_OUTPUT_DIR/CompleteResults_Tx.htm"
+	
+	rm -f /tmp/CompleteResults*.htm
+	
 	dos2unix "$CSV_OUTPUT_DIR/"*.htm
 	
 	tmpoutputdir="/tmp/${SCRIPT_NAME}results"
 	mkdir -p "$tmpoutputdir"
-	cp "$CSV_OUTPUT_DIR/"*.htm "$tmpoutputdir/."
-
+	mv "$CSV_OUTPUT_DIR/CompleteResults"*.htm "$tmpoutputdir/."
+	
 	if [ "$OUTPUTTIMEMODE" = "unix" ]; then
 		find "$tmpoutputdir/" -name '*.htm' -exec sh -c 'i="$1"; mv -- "$i" "${i%.htm}.csv"' _ {} \;
 	elif [ "$OUTPUTTIMEMODE" = "non-unix" ]; then
 		for i in "$tmpoutputdir/"*".htm"; do
-			awk -F"," 'NR==1 {OFS=","; print} NR>1 {OFS=","; $2=strftime("%Y-%m-%d %H:%M:%S", $2); print }' "$i" > "$i.out"
+			awk -F"," 'NR==1 {OFS=","; print} NR>1 {OFS=","; $1=strftime("%Y-%m-%d %H:%M:%S", $1); print }' "$i" > "$i.out"
 		done
 		
 		find "$tmpoutputdir/" -name '*.htm.out' -exec sh -c 'i="$1"; mv -- "$i" "${i%.htm.out}.csv"' _ {} \;
@@ -914,6 +970,7 @@ Check_Requirements(){
 		opkg update
 		opkg install sqlite3-cli
 		opkg install p7zip
+		opkg install coreutils-paste
 		return 0
 	else
 		return 1
