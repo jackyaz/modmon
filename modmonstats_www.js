@@ -603,11 +603,11 @@ function update_status(){
 		dataType: 'script',
 		timeout: 3000,
 		error:	function(xhr){
-			setTimeout('update_status();', 1000);
+			setTimeout(update_status, 1000);
 		},
 		success: function(){
 			if (updatestatus == "InProgress"){
-				setTimeout('update_status();', 1000);
+				setTimeout(update_status, 1000);
 			}
 			else{
 				document.getElementById("imgChkUpdate").style.display = "none";
@@ -632,7 +632,7 @@ function CheckUpdate(){
 	document.formScriptActions.action_script.value="start_modmoncheckupdate"
 	document.formScriptActions.submit();
 	document.getElementById("imgChkUpdate").style.display = "";
-	setTimeout("update_status();", 2000);
+	setTimeout(update_status, 2000);
 }
 
 function DoUpdate(){
@@ -732,7 +732,7 @@ function get_conf_file(){
 		url: '/ext/modmon/config.htm',
 		dataType: 'text',
 		error: function(xhr){
-			setTimeout("get_conf_file();", 1000);
+			setTimeout(get_conf_file, 1000);
 		},
 		success: function(data){
 			var configdata=data.split("\n");
