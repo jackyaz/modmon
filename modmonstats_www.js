@@ -453,6 +453,10 @@ function ProcessChart(i1,i2,dataobject){
 	currentNoCharts++;
 	
 	if(currentNoCharts == maxNoCharts){
+		document.getElementById("modupdate_text").innerHTML = "";
+		showhide("imgModUpdate", false);
+		showhide("modupdate_text", false);
+		showhide("btnUpdateStats", true);
 		for(i = 0; i < metriclist.length; i++){
 			$j("#"+metriclist[i]+"_Period").val(GetCookie(metriclist[i]+"_Period","number"));
 			Draw_Chart(metriclist[i],titlelist[i],measureunitlist[i]);
@@ -587,7 +591,7 @@ function ToggleDragZoom(button){
 }
 
 function ExportCSV(){
-	location.href = "ext/modmon/csv/modmondata.zip";
+	location.href = "/ext/modmon/csv/modmondata.zip";
 	return 0;
 }
 
@@ -623,8 +627,8 @@ function update_status(){
 
 function CheckUpdate(){
 	showhide("btnChkUpdate", false);
-	document.formChkVer.action_script.value="start_modmoncheckupdate"
-	document.formChkVer.submit();
+	document.formScriptActions.action_script.value="start_modmoncheckupdate"
+	document.formScriptActions.submit();
 	document.getElementById("imgChkUpdate").style.display = "";
 	setTimeout("update_status();", 2000);
 }
@@ -638,7 +642,7 @@ function DoUpdate(){
 	document.form.submit();
 }
 
-function applyRule(){
+function SaveConfig(){
 	document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject())
 	var action_script_tmp = "start_modmonconfig";
 	document.form.action_script.value = action_script_tmp;
@@ -648,12 +652,60 @@ function applyRule(){
 	document.form.submit();
 }
 
+function update_modtest(){
+	$j.ajax({
+		url: '/ext/modmon/detect_modmon.js',
+		dataType: 'script',
+		timeout: 1000,
+		error: function(xhr){
+			setTimeout(update_modtest, 1000);
+		},
+		success: function(){
+			if (modmonstatus == "InProgress"){
+				setTimeout(update_modtest, 1000);
+			}
+			else if (modmonstatus == "Done"){
+				document.getElementById("modupdate_text").innerHTML = "Refreshing charts...";
+				PostModUpdate();
+			}
+		}
+	});
+}
+
+function PostModUpdate(){
+	currentNoCharts = 0;
+	$j("#table_filters").remove();
+	$j("#table_charts").remove();
+	reload_js('/ext/modmon/modstatstext.js');
+	$j("#Time_Format").val(GetCookie("Time_Format","number"));
+	SetModStatsTitle();
+	setTimeout(ResetLayout, 3000);
+}
+
+function ResetLayout(){
+	var metrictablehtml="";
+	
+	for (i = 0; i < metriclist.length; i++){
+		metrictablehtml += BuildMetricTable(metriclist[i],titlelist[i],i);
+	}
+	
+	$j("#table_buttons2").after(metrictablehtml);
+	RedrawAllCharts();
+}
+
+function reload_js(src){
+	$j('script[src="' + src + '"]').remove();
+	$j('<script>').attr('src', src+'?cachebuster='+ new Date().getTime()).appendTo('head');
+}
+
 function UpdateStats(){
-	var action_script_tmp = "start_modmon";
-	var restart_time = 10;
-	document.form.action_wait.value = restart_time;
-	showLoading();
-	document.form.submit();
+	showhide("btnUpdateStats", false);
+	document.formScriptActions.action_script.value="start_modmon";
+	document.formScriptActions.submit();
+	document.getElementById("modupdate_text").innerHTML = "Retrieving Hub 3 stats";
+	showhide("imgModUpdate", true);
+	showhide("modupdate_text", true);
+	setTimeout(update_modtest, 2000);
 }
 
 function GetVersionNumber(versiontype){
@@ -685,18 +737,7 @@ function get_conf_file(){
 			configdata = configdata.filter(Boolean);
 			
 			for (var i = 0; i < configdata.length; i++){
-				if (configdata[i].indexOf("OUTPUTDATAMODE") != -1){
-					document.form.modmon_outputdatamode.value=configdata[i].split("=")[1].replace(/(\r\n|\n|\r)/gm,"");
-				}
-				else if (configdata[i].indexOf("OUTPUTTIMEMODE") != -1){
-					document.form.modmon_outputtimemode.value=configdata[i].split("=")[1].replace(/(\r\n|\n|\r)/gm,"");
-				}
-				else if (configdata[i].indexOf("STORAGELOCATION") != -1){
-					document.form.modmon_storagelocation.value=configdata[i].split("=")[1].replace(/(\r\n|\n|\r)/gm,"");
-				}
-				else if (configdata[i].indexOf("FIXTXPWR") != -1){
-					document.form.modmon_fixtxpwr.value=configdata[i].split("=")[1].replace(/(\r\n|\n|\r)/gm,"");
-				}
+				eval("document.form.modmon_"+configdata[i].split("=")[0].toLowerCase()).value = configdata[i].split("=")[1].replace(/(\r\n|\n|\r)/gm,"");
 			}
 		}
 	});
@@ -706,8 +747,8 @@ function BuildMetricTable(name,title,loopindex){
 	var charthtml = '<div style="line-height:10px;">&nbsp;</div>';
 	
 	if(loopindex == 0){
-		charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">';
-		charthtml+='<thead class="collapsible-jquery" id="table_charts">';
+		charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_charts">';
+		charthtml+='<thead class="collapsible-jquery" id="thead_charts">';
 		charthtml+='<tr>';
 		charthtml+='<td>Charts (click to expand/collapse)</td>';
 		charthtml+='</tr>';
@@ -766,8 +807,7 @@ function BuildChannelFilterTable(){
 }
 
 function BuildChannelFilterRow(rxtx,title,channelcount){
-	var channelhtml='';
-	channelhtml+='<div style="line-height:10px;">&nbsp;</div>';
+	var channelhtml='<div style="line-height:10px;">&nbsp;</div>';
 	channelhtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_'+rxtx+'">';
 	channelhtml+='<thead id="channel_table_'+rxtx+'stream">';
 	channelhtml+='<tr><td colspan="12">'+title+'</td></tr>';
