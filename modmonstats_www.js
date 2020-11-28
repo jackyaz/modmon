@@ -524,6 +524,8 @@ function initial(){
 	
 	$j("#table_buttons2").after(metrictablehtml);
 	
+	$j("#table_config").after(BuildModemLogsTable());
+	
 	RedrawAllCharts();
 }
 
@@ -848,6 +850,55 @@ function BuildChannelFilterRow(rxtx,title,channelcount){
 	channelhtml+='</td></tr>';
 	channelhtml+='</table>';
 	return channelhtml;
+}
+
+function BuildModemLogsTable(){
+	var tablehtml = '<div style="line-height:10px;">&nbsp;</div>';
+	tablehtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">';
+	tablehtml+='<thead class="collapsible-jquery" id="resulttable_modem">';
+	tablehtml+='<tr><td colspan="2">Modem Log Entries (click to expand/collapse)</td></tr>';
+	tablehtml+='</thead>';
+	tablehtml+='<tr>';
+	tablehtml+='<td colspan="2" align="center" style="padding: 0px;">';
+	tablehtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable StatsTable">';
+	var nodata="";
+	var objdataname = window["DataTimestamp"];
+	if(typeof objdataname === 'undefined' || objdataname === null){nodata="true"}
+	else if(objdataname.length == 0){nodata="true"}
+	else if(objdataname.length == 1 && objdataname[0] == ""){nodata="true"}
+	
+	if(nodata == "true"){
+		tablehtml+='<tr>';
+		tablehtml+='<td colspan="3" class="nodata">';
+		tablehtml+='No data to display';
+		tablehtml+='</td>';
+		tablehtml+='</tr>';
+	}
+	else{
+		tablehtml+='<col style="width:125px;">';
+		tablehtml+='<col style="width:75px;">';
+		tablehtml+='<col style="width:550px;">';
+		tablehtml+='<thead>';
+		tablehtml+='<tr>';
+		tablehtml+='<th class="keystatsnumber">Time</th>';
+		tablehtml+='<th class="keystatsnumber">Priority</th>';
+		tablehtml+='<th class="keystatsnumber">Message</th>';
+		tablehtml+='</tr>';
+		tablehtml+='</thead>';
+		
+		for(i = 0; i < objdataname.length; i++){
+			tablehtml+='<tr>';
+			tablehtml+='<td>'+window["DataTimestamp"][i]+'</td>';
+			tablehtml+='<td>'+window["DataPrio"][i]+'</td>';
+			tablehtml+='<td>'+window["DataText"][i]+'</td>';
+			tablehtml+='</tr>';
+		};
+	}
+	tablehtml+='</table>';
+	tablehtml+='</td>';
+	tablehtml+='</tr>';
+	tablehtml+='</table>';
+	return tablehtml;
 }
 
 function ToggleDataset(checkbox){

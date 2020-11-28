@@ -298,6 +298,7 @@ Create_Symlinks(){
 	rm -rf "${SCRIPT_WEB_DIR:?}/"* 2>/dev/null
 	
 	ln -s /tmp/detect_modmon.js "$SCRIPT_WEB_DIR/detect_modmon.js" 2>/dev/null
+	ln -s "$SCRIPT_STORAGE_DIR/modlogs.js"  "$SCRIPT_WEB_DIR/modlogs.js" 2>/dev/null
 	ln -s "$SCRIPT_STORAGE_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
 	
 	ln -s "$SCRIPT_CONF" "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
@@ -568,6 +569,23 @@ FixTxPwr(){
 	esac
 }
 
+WritePlainData_ToJS(){
+	inputfile="$1"
+	outputfile="$2"
+	shift;shift
+	i="0"
+	for var in "$@"; do
+		i=$((i+1))
+		{
+			echo "var $var;"
+			echo "$var = [];"
+			echo "${var}.unshift('$(awk -v i=$i '{printf t $i} {t=","}' "$inputfile" | sed "s~,~\\',\\'~g")');"
+			echo
+		} >> "$outputfile"
+	done
+	sed -i 's/@/ /g' "$outputfile"
+}
+
 WriteStats_ToJS(){
 	echo "function $3(){" > "$2"
 	html='document.getElementById("'"$4"'").innerHTML="'
@@ -649,9 +667,24 @@ Get_Modem_Stats(){
 		
 		Generate_CSVs
 		
+		logcount="$(grep -c "DevEv" $shstatsfile)"
+		counter=1
+		until [ $counter -gt "$logcount" ]; do
+			logtime="$(grep "DevEv" $shstatsfile | sed "$counter!d" | cut -d',' -f3 | sed 's/ /@/g')"
+			logprio="$(grep "DevEv" $shstatsfile | sed "$((counter+1))!d" | cut -d',' -f3 | sed 's/3/Critical/;s/4/Error/;s/5/Warning/;s/6/Notice/')"
+			logmessage="$(grep "DevEv" $shstatsfile | sed "$((counter+2))!d" | cut -d',' -f3  | sed 's/ /@/g')"
+			echo "$logtime $logprio $logmessage" >> /tmp/modlogs.csv
+			counter=$((counter + 3))
+		done
+		
+		rm -f "$SCRIPT_STORAGE_DIR/modlogs.js"
+		WritePlainData_ToJS "/tmp/modlogs.csv" "$SCRIPT_STORAGE_DIR/modlogs.js" "DataTimestamp" "DataPrio" "DataText"
+		
+		rm -f /tmp/modlogs.csv
+		
 		echo "Stats last updated: $timenowfriendly" > "/tmp/modstatstitle.txt"
 		WriteStats_ToJS /tmp/modstatstitle.txt "$SCRIPT_STORAGE_DIR/modstatstext.js" SetModStatsTitle statstitle
-		Print_Output false "Cable modem stats successfully retrieved" "$PASS"
+		Print_Output true "Cable modem stats successfully retrieved" "$PASS"
 		
 		echo 'var modmonstatus = "Done";' > /tmp/detect_modmon.js
 		
