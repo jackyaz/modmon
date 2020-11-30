@@ -678,6 +678,7 @@ function PostModUpdate(){
 	currentNoCharts = 0;
 	$j("#table_filters").remove();
 	$j("#table_charts").remove();
+	$j("#table_modemlogs").remove();
 	reload_js('/ext/modmon/modstatstext.js');
 	$j("#Time_Format").val(GetCookie("Time_Format","number"));
 	SetModStatsTitle();
@@ -692,6 +693,7 @@ function ResetLayout(){
 	}
 	
 	$j("#table_buttons2").after(metrictablehtml);
+	$j("#table_config").after(BuildModemLogsTable());
 	RedrawAllCharts();
 }
 
@@ -832,7 +834,7 @@ function BuildChannelFilterRow(rxtx,title,channelcount){
 	channelhtml+='<col style="width:60px;">';
 	channelhtml+='<tr>';
 	for (channelno = 1; channelno < channelcount+1; channelno++){
-		channelhtml+='<td class="channelcell"><label class="radio"><input type="checkbox" onchange="ToggleDataset(this);" name="'+rxtx+'opt'+channelno+'" id="'+rxtx+'opt'+channelno+'" checked/>Ch. '+channelno+'</label></td>';
+		channelhtml+='<td class="channelcell"><input type="checkbox" onchange="ToggleDataset(this);" name="'+rxtx+'opt'+channelno+'" id="'+rxtx+'opt'+channelno+'" checked/><label class="radio filtervalue">Ch. '+channelno+'</label></td>';
 		if(channelno % 12 == 0){
 			channelhtml+='</tr><tr>';
 		}
@@ -854,8 +856,8 @@ function BuildChannelFilterRow(rxtx,title,channelcount){
 
 function BuildModemLogsTable(){
 	var tablehtml = '<div style="line-height:10px;">&nbsp;</div>';
-	tablehtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">';
-	tablehtml+='<thead class="collapsible-jquery" id="resulttable_modem">';
+	tablehtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_modemlogs">';
+	tablehtml+='<thead class="collapsible-jquery" id="thead_modemlogs">';
 	tablehtml+='<tr><td colspan="2">Modem Log Entries (click to expand/collapse)</td></tr>';
 	tablehtml+='</thead>';
 	tablehtml+='<tr>';
@@ -885,6 +887,9 @@ function BuildModemLogsTable(){
 		tablehtml+='<th class="keystatsnumber">Message</th>';
 		tablehtml+='</tr>';
 		tablehtml+='</thead>';
+		window["DataTimestamp"].reverse();
+		window["DataPrio"].reverse();
+		window["DataText"].reverse();
 		
 		for(i = 0; i < objdataname.length; i++){
 			tablehtml+='<tr>';
@@ -941,7 +946,7 @@ function AddEventHandlers(){
 			}
 		})
 	});
-
+	
 	$j(".collapsible-jquery").each(function(index,element){
 		if(GetCookie($j(this)[0].id,"string") == "collapsed"){
 			$j(this).siblings().toggle(false);
