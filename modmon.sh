@@ -836,7 +836,7 @@ Generate_CSVs(){
 	rm -rf "$tmpoutputdir"
 }
 
-Shortcut_script(){
+Shortcut_Script(){
 	case $1 in
 		create)
 			if [ -d /opt/bin ] && [ ! -f "/opt/bin/$SCRIPT_NAME" ] && [ -f "/jffs/scripts/$SCRIPT_NAME" ]; then
@@ -1036,7 +1036,7 @@ Menu_Install(){
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
-	Shortcut_script create
+	Shortcut_Script create
 	
 	Clear_Lock
 }
@@ -1050,7 +1050,7 @@ Menu_Startup(){
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
-	Shortcut_script create
+	Shortcut_Script create
 	Mount_WebUI
 	Clear_Lock
 }
@@ -1109,7 +1109,7 @@ Menu_Uninstall(){
 	Auto_Startup delete 2>/dev/null
 	Auto_Cron delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
-	Shortcut_script delete
+	Shortcut_Script delete
 	Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp"
 	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
 		sed -i "\\~$MyPage~d" /tmp/menuTree.js
@@ -1212,7 +1212,7 @@ if [ -z "$1" ]; then
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
-	Shortcut_script create
+	Shortcut_Script create
 	ScriptHeader
 	MainMenu
 	exit 0
