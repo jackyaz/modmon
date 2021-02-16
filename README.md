@@ -2,8 +2,8 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/jackyaz/modmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jackyaz/modmon&amp;utm_campaign=Badge_Grade)
 [![Build Status](https://travis-ci.com/jackyaz/modmon.svg?branch=master)](https://travis-ci.com/jackyaz/modmon)
 
-## v1.1.1
-### Updated on 2020-12-01
+## v1.1.2
+### Updated on 2021-02-16
 ## About
 modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries.
 
@@ -50,12 +50,4 @@ If this does not work, you will need to use the full path:
 ![CLI UI](https://puu.sh/GFIfe/0ed3bef03d.png)
 
 ## Help
-Please post about any issues and problems here: [modmon on SNBForums](https://www.snbforums.com/threads/modmon-webui-for-monitoring-cable-modem-stats.61363/)
-
-## FAQs
-### I haven't used scripts before on AsusWRT-Merlin
-If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes.
-
-Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts)
-
-![WebUI enable scripts](https://puu.sh/A3wnG/00a43283ed.png)
+Please post about any issues and problems here: [Asuswrt-Merlin AddOns on SNBForums](https://www.snbforums.com/forums/asuswrt-merlin-addons.60/)

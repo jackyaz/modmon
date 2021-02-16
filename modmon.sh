@@ -14,9 +14,9 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v1.1.1"
-readonly SCRIPT_BRANCH="master"
-readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+readonly SCRIPT_VERSION="v1.1.2"
+SCRIPT_BRANCH="master"
+SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$SCRIPT_NAME"
@@ -334,7 +334,7 @@ Auto_ServiceEvent(){
 			if [ -f /jffs/scripts/service-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/service-event)
 				# shellcheck disable=SC2016
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME service_event"' "$1" "$2" &'' # '"$SCRIPT_NAME" /jffs/scripts/service-event)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME service_event"' "$@" & # '"$SCRIPT_NAME" /jffs/scripts/service-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/service-event
@@ -342,13 +342,13 @@ Auto_ServiceEvent(){
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					# shellcheck disable=SC2016
-					echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$1" "$2" &'' # '"$SCRIPT_NAME" >> /jffs/scripts/service-event
+					echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$@" & # '"$SCRIPT_NAME" >> /jffs/scripts/service-event
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/service-event
 				echo "" >> /jffs/scripts/service-event
 				# shellcheck disable=SC2016
-				echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$1" "$2" &'' # '"$SCRIPT_NAME" >> /jffs/scripts/service-event
+				echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$@" & # '"$SCRIPT_NAME" >> /jffs/scripts/service-event
 				chmod 0755 /jffs/scripts/service-event
 			fi
 		;;
@@ -369,20 +369,27 @@ Auto_Startup(){
 		create)
 			if [ -f /jffs/scripts/services-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/services-start)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" /jffs/scripts/services-start)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
+				fi
+			fi
+			if [ -f /jffs/scripts/post-mount ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/post-mount)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" /jffs/scripts/post-mount)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
-					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/post-mount
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" >> /jffs/scripts/services-start
+					echo "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" >> /jffs/scripts/post-mount
 				fi
 			else
-				echo "#!/bin/sh" > /jffs/scripts/services-start
-				echo "" >> /jffs/scripts/services-start
-				echo "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" >> /jffs/scripts/services-start
-				chmod 0755 /jffs/scripts/services-start
+				echo "#!/bin/sh" > /jffs/scripts/post-mount
+				echo "" >> /jffs/scripts/post-mount
+				echo "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" >> /jffs/scripts/post-mount
+				chmod 0755 /jffs/scripts/post-mount
 			fi
 		;;
 		delete)
@@ -391,6 +398,13 @@ Auto_Startup(){
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
+				fi
+			fi
+			if [ -f /jffs/scripts/post-mount ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/post-mount)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/post-mount
 				fi
 			fi
 		;;
@@ -433,19 +447,22 @@ Get_WebUI_Page(){
 	done
 }
 
+### locking mechanism code credit to Martineau (@MartineauUK) ###
 Mount_WebUI(){
+	LOCKFILE=/tmp/addonwebui.lock
+	FD=386
+	eval exec "$FD>$LOCKFILE"
+	flock -x "$FD"
 	Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp"
 	if [ "$MyPage" = "none" ]; then
 		Print_Output true "Unable to mount $SCRIPT_NAME WebUI page, exiting" "$CRIT"
-		Clear_Lock
-		exit 1
+		flock -u "$FD"
+		return 1
 	fi
-	Print_Output true "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 	cp -f "$SCRIPT_DIR/modmonstats_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
 	echo "modmon" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	
 	if [ "$(uname -o)" = "ASUSWRT-Merlin" ]; then
-	
 		if [ ! -f /tmp/index_style.css ]; then
 			cp -f /www/index_style.css /tmp/
 		fi
@@ -475,6 +492,8 @@ Mount_WebUI(){
 		umount /www/require/modules/menuTree.js 2>/dev/null
 		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 	fi
+	flock -u "$FD"
+	Print_Output true "Mounted $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 }
 
 ScriptStorageLocation(){
@@ -590,7 +609,7 @@ WriteStats_ToJS(){
 	echo "function $3(){" > "$2"
 	html='document.getElementById("'"$4"'").innerHTML="'
 	while IFS='' read -r line || [ -n "$line" ]; do
-		html="$html$line\r\\n"
+		html="${html}${line}\r\\n"
 	done < "$1"
 	html="$html"'"'
 	printf "%s\\r\\n}\\r\\n" "$html" >> "$2"
@@ -827,11 +846,11 @@ Generate_CSVs(){
 		rm -f "$tmpoutputdir/"*.htm
 	fi
 	
-	if [ ! -f /opt/bin/7z ]; then
+	if [ ! -f /opt/bin/7za ]; then
 		opkg update
 		opkg install p7zip
 	fi
-	/opt/bin/7z a -y -bsp0 -bso0 -tzip "/tmp/${SCRIPT_NAME}data.zip" "$tmpoutputdir/*"
+	/opt/bin/7za a -y -bsp0 -bso0 -tzip "/tmp/${SCRIPT_NAME}data.zip" "$tmpoutputdir/*"
 	mv "/tmp/${SCRIPT_NAME}data.zip" "$CSV_OUTPUT_DIR"
 	rm -rf "$tmpoutputdir"
 }
@@ -1042,6 +1061,25 @@ Menu_Install(){
 }
 
 Menu_Startup(){
+	if [ -z "$1" ]; then
+		Print_Output true "Missing argument for startup, not starting $SCRIPT_NAME" "$WARN"
+		exit 1
+	elif [ "$1" != "force" ]; then
+		if [ ! -f "$1/entware/bin/opkg" ]; then
+			Print_Output true "$1 does not contain Entware, not starting $SCRIPT_NAME" "$WARN"
+			exit 1
+		else
+			Print_Output true "$1 contains Entware, starting $SCRIPT_NAME" "$WARN"
+		fi
+	fi
+	
+	NTP_Ready
+	
+	Check_Lock
+	
+	if [ "$1" != "force" ]; then
+		sleep 10
+	fi
 	Create_Dirs
 	Conf_Exists
 	Set_Version_Custom_Settings local
@@ -1130,23 +1168,21 @@ Menu_Uninstall(){
 			:
 		;;
 	esac
+	SETTINGSFILE=/jffs/addons/custom_settings.txt
+	sed -i '/modmon_version_local/d' "$SETTINGSFILE"
+	sed -i '/modmon_version_server/d' "$SETTINGSFILE"
 	rm -f "/jffs/scripts/$SCRIPT_NAME" 2>/dev/null
 	Clear_Lock
 	Print_Output true "Uninstall completed" "$PASS"
 }
 
 NTP_Ready(){
-	if [ "$1" = "service_event" ]; then
-		if [ -n "$2" ] && [ "$(echo "$3" | grep -c "$SCRIPT_NAME")" -eq 0 ]; then
-			exit 0
-		fi
-	fi
-	if [ "$(nvram get ntp_ready)" = "0" ]; then
+	if [ "$(nvram get ntp_ready)" -eq 0 ]; then
 		ntpwaitcount="0"
 		Check_Lock
-		while [ "$(nvram get ntp_ready)" = "0" ] && [ "$ntpwaitcount" -lt "300" ]; do
+		while [ "$(nvram get ntp_ready)" -eq 0 ] && [ "$ntpwaitcount" -lt 300 ]; do
 			ntpwaitcount="$((ntpwaitcount + 1))"
-			if [ "$ntpwaitcount" = "60" ]; then
+			if [ "$ntpwaitcount" -eq 60 ]; then
 				Print_Output true "Waiting for NTP to sync..." "$WARN"
 			fi
 			sleep 1
@@ -1164,13 +1200,7 @@ NTP_Ready(){
 
 ### function based on @Adamm00's Skynet USB wait function ###
 Entware_Ready(){
-	if [ "$1" = "service_event" ]; then
-		if [ -n "$2" ] && [ "$(echo "$3" | grep -c "$SCRIPT_NAME")" -eq 0 ]; then
-			exit 0
-		fi
-	fi
-
-	if [ ! -f /opt/bin/opkg ] && ! echo "$@" | grep -wqE "(install|uninstall|update|forceupdate)"; then
+	if [ ! -f /opt/bin/opkg ]; then
 		Check_Lock
 		sleepcount=1
 		while [ ! -f /opt/bin/opkg ] && [ "$sleepcount" -le 10 ]; do
@@ -1190,9 +1220,6 @@ Entware_Ready(){
 }
 ### ###
 
-NTP_Ready "$@"
-Entware_Ready "$@"
-
 if [ -f "/opt/share/$SCRIPT_NAME.d/config" ]; then
 	SCRIPT_CONF="/opt/share/$SCRIPT_NAME.d/config"
 	SCRIPT_STORAGE_DIR="/opt/share/$SCRIPT_NAME.d"
@@ -1204,6 +1231,8 @@ fi
 CSV_OUTPUT_DIR="$SCRIPT_STORAGE_DIR/csv"
 
 if [ -z "$1" ]; then
+	NTP_Ready
+	Entware_Ready
 	Create_Dirs
 	Conf_Exists
 	Set_Version_Custom_Settings local
@@ -1225,17 +1254,19 @@ case "$1" in
 		exit 0
 	;;
 	startup)
-		Check_Lock
-		sleep 10
-		Menu_Startup
+		Menu_Startup "$2"
 		exit 0
 	;;
 	generate)
+		NTP_Ready
+		Entware_Ready
 		Check_Lock
 		Menu_GenerateStats
 		exit 0
 	;;
 	outputcsv)
+		NTP_Ready
+		Entware_Ready
 		Check_Lock
 		Generate_CSVs
 		Clear_Lock
@@ -1268,6 +1299,7 @@ case "$1" in
 		exit 0
 	;;
 	setversion)
+		Entware_Ready
 		Set_Version_Custom_Settings local
 		Set_Version_Custom_Settings server "$SCRIPT_VERSION"
 		if [ -z "$2" ]; then
@@ -1285,13 +1317,15 @@ case "$1" in
 		exit 0
 	;;
 	develop)
-		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="develop"/' "/jffs/scripts/$SCRIPT_NAME"
-		exec "$0" update
+		SCRIPT_BRANCH="develop"
+		SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+		Update_Version force
 		exit 0
 	;;
 	stable)
-		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="master"/' "/jffs/scripts/$SCRIPT_NAME"
-		exec "$0" update
+		SCRIPT_BRANCH="master"
+		SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+		Update_Version force
 		exit 0
 	;;
 	*)

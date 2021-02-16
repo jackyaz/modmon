@@ -532,7 +532,6 @@ function initial(){
 function ScriptUpdateLayout(){
 	var localver = GetVersionNumber("local");
 	var serverver = GetVersionNumber("server");
-	$j("#scripttitle").text($j("#scripttitle").text()+" - "+localver);
 	$j("#modmon_version_local").text(localver);
 	
 	if (localver != serverver && serverver != "N/A"){
