@@ -15,8 +15,8 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
 readonly SCRIPT_VERSION="v1.1.2"
-readonly SCRIPT_BRANCH="develop"
-readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+SCRIPT_BRANCH="develop"
+SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$SCRIPT_NAME"
@@ -1285,13 +1285,15 @@ case "$1" in
 		exit 0
 	;;
 	develop)
-		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="develop"/' "/jffs/scripts/$SCRIPT_NAME"
-		exec "$0" update
+		SCRIPT_BRANCH="develop"
+		SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+		Update_Version force
 		exit 0
 	;;
 	stable)
-		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="master"/' "/jffs/scripts/$SCRIPT_NAME"
-		exec "$0" update
+		SCRIPT_BRANCH="master"
+		SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+		Update_Version force
 		exit 0
 	;;
 	*)
