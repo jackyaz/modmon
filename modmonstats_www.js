@@ -23,7 +23,7 @@ Chart.Tooltip.positioners.cursor = function(chartElements, coordinates){
 };
 
 function keyHandler(e){
-	if (e.keyCode == 27){
+	if(e.keyCode == 27){
 		$j(document).off("keydown");
 		ResetZoom();
 	}
@@ -58,7 +58,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity){
 	var dataobject = window[txtchartname+chartperiod];
 	
 	if(typeof dataobject === 'undefined' || dataobject === null){ Draw_Chart_NoData(txtchartname); return; }
-	if (dataobject.length == 0){ Draw_Chart_NoData(txtchartname); return; }
+	if(dataobject.length == 0){ Draw_Chart_NoData(txtchartname); return; }
 	
 	var unique = [];
 	var chartChannels = [];
@@ -77,13 +77,13 @@ function Draw_Chart(txtchartname,txttitle,txtunity){
 	var timetooltipformat = getTimeFormat($j("#Time_Format option:selected").val(),"tooltip");
 	
 	factor=0;
-	if (txtunitx=="hour"){
+	if(txtunitx=="hour"){
 		factor=60*60*1000;
 	}
-	else if (txtunitx=="day"){
+	else if(txtunitx=="day"){
 		factor=60*60*24*1000;
 	}
-	if (objchartname != undefined) objchartname.destroy();
+	if(objchartname != undefined) objchartname.destroy();
 	var ctx = document.getElementById("divLineChart_"+txtchartname).getContext("2d");
 	var lineOptions = {
 		segmentShowStroke : false,
@@ -109,7 +109,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity){
 		tooltips: {
 			callbacks: {
 					title: function (tooltipItem, data){ return (moment(tooltipItem[0].xLabel,"X").format(timetooltipformat)); },
-					label: function (tooltipItem, data){ return data.datasets[tooltipItem.datasetIndex].label + ": " + round(data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index].y,3).toFixed(3) + ' ' + txtunity;}
+					label: function (tooltipItem, data){ return data.datasets[tooltipItem.datasetIndex].label + ": " + round(data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index].y,2).toFixed(2) + ' ' + txtunity;}
 				},
 				mode: 'point',
 				position: 'cursor',
@@ -131,14 +131,20 @@ function Draw_Chart(txtchartname,txttitle,txtunity){
 				}
 			}],
 			yAxes: [{
+				//type: getChartScale($j("#" + txtchartname + "_Scale option:selected").val()),
 				gridLines: { display: false, color: "#282828" },
-				scaleLabel: { display: false, labelString: txttitle },
+				scaleLabel: { display: false, labelString: txtunity },
 				ticks: {
 					display: true,
 					beginAtZero: startAtZero(txtchartname),
+					labels: {
+						index:  ['min', 'max'],
+						removeEmptyLines: true,
+					},
 					callback: function (value, index, values){
-						return round(value,3).toFixed(3) + ' ' + txtunity;
+						return round(value,2).toFixed(2) + ' ' + txtunity;
 					}
+					//userCallback: LogarithmicFormatter
 				},
 			}]
 		},
@@ -196,7 +202,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity){
 					enabled: true,
 					xAdjust: 0,
 					yAdjust: 0,
-					content: "Avg=" + round(getAverage(chartData),3).toFixed(3)+txtunity,
+					content: "Avg=" + round(getAverage(chartData),2).toFixed(2)+txtunity,
 				}
 			},
 			{
@@ -221,7 +227,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity){
 					enabled: true,
 					xAdjust: 15,
 					yAdjust: 0,
-					content: "Max=" + round(getLimit(chartData,"y","max",true),3).toFixed(3)+txtunity,
+					content: "Max=" + round(getLimit(chartData,"y","max",true),2).toFixed(2)+txtunity,
 				}
 			},
 			{
@@ -246,7 +252,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity){
 					enabled: true,
 					xAdjust: 15,
 					yAdjust: 0,
-					content: "Min=" + round(getLimit(chartData,"y","min",true),3).toFixed(3)+txtunity,
+					content: "Min=" + round(getLimit(chartData,"y","min",true),2).toFixed(2)+txtunity,
 				}
 			}]
 		}
@@ -275,6 +281,46 @@ function getDataSets(txtchartname, objdata, objchannels){
 	}
 	return datasets;
 }
+
+function LogarithmicFormatter(tickValue, index, ticks){
+	var unit = this.options.scaleLabel.labelString;
+	if(this.type != "logarithmic"){
+		if(! isNaN(tickValue)){
+			return round(tickValue,2).toFixed(2) + ' ' + unit;
+		}
+		else{
+			return tickValue + ' ' + unit;
+		}
+	}
+	else{
+		var labelOpts =  this.options.ticks.labels || {};
+		var labelIndex = labelOpts.index || ['min', 'max'];
+		var labelSignificand = labelOpts.significand || [1,2,5];
+		var significand = tickValue / (Math.pow(10, Math.floor(Chart.helpers.log10(tickValue))));
+		var emptyTick = labelOpts.removeEmptyLines === true ? undefined : '';
+		var namedIndex = '';
+		if(index === 0){
+			namedIndex = 'min';
+		}
+		else if(index === ticks.length - 1){
+			namedIndex = 'max';
+		}
+		if(labelOpts === 'all' || labelSignificand.indexOf(significand) !== -1 || labelIndex.indexOf(index) !== -1 || labelIndex.indexOf(namedIndex) !== -1){
+			if(tickValue === 0){
+				return '0' + ' ' + unit;
+			}
+			else{
+				if(! isNaN(tickValue)){
+					return round(tickValue,2).toFixed(2) + ' ' + unit;
+				}
+				else{
+					return tickValue + ' ' + unit;
+				}
+			}
+		}
+		return emptyTick;
+	}
+};
 
 function getLimit(datasetname,axis,maxmin,isannotation){
 	var limit=0;
@@ -366,7 +412,7 @@ function ToggleLines(){
 		SetCookie("ShowLines","");
 	}
 	for(i = 0; i < metriclist.length; i++){
-		for (i3 = 0; i3 < 3; i3++){
+		for(i3 = 0; i3 < 3; i3++){
 			window["LineChart_"+metriclist[i]].options.annotation.annotations[i3].type=ShowLines;
 		}
 		window["LineChart_"+metriclist[i]].update();
@@ -400,7 +446,7 @@ function changeChart(e) {
 
 function RedrawAllCharts(){
 	for(i = 0; i < metriclist.length; i++){
-		for (i2 = 0; i2 < chartlist.length; i2++){
+		for(i2 = 0; i2 < chartlist.length; i2++){
 			d3.csv("/ext/modmon/csv/"+metriclist[i]+chartlist[i2]+".htm").then(ProcessChart.bind(null,i,i2));
 		}
 	}
@@ -410,7 +456,7 @@ function changeAllCharts(e){
 	value = e.value * 1;
 	name = e.id.substring(0, e.id.indexOf("_"));
 	SetCookie(e.id,value);
-	for (i = 0; i < metriclist.length; i++){
+	for(i = 0; i < metriclist.length; i++){
 		Draw_Chart(metriclist[i],titlelist[i],measureunitlist[i]);
 	}
 }
@@ -419,7 +465,7 @@ function getTimeFormat(value,format){
 	var timeformat;
 	
 	if(format == "axis"){
-		if (value == 0){
+		if(value == 0){
 			timeformat = {
 				millisecond: 'HH:mm:ss.SSS',
 				second: 'HH:mm:ss',
@@ -427,7 +473,7 @@ function getTimeFormat(value,format){
 				hour: 'HH:mm'
 			}
 		}
-		else if (value == 1){
+		else if(value == 1){
 			timeformat = {
 				millisecond: 'h:mm:ss.SSS A',
 				second: 'h:mm:ss A',
@@ -437,10 +483,10 @@ function getTimeFormat(value,format){
 		}
 	}
 	else if(format == "tooltip"){
-		if (value == 0){
+		if(value == 0){
 			timeformat = "YYYY-MM-DD HH:mm:ss";
 		}
-		else if (value == 1){
+		else if(value == 1){
 			timeformat = "YYYY-MM-DD h:mm:ss A";
 		}
 	}
@@ -469,7 +515,7 @@ function ProcessChart(i1,i2,dataobject){
 
 function GetCookie(cookiename,returntype){
 	var s;
-	if ((s = cookie.get("mod_"+cookiename)) != null){
+	if((s = cookie.get("mod_"+cookiename)) != null){
 		return cookie.get("mod_"+cookiename);
 	}
 	else{
@@ -490,12 +536,12 @@ $j.fn.serializeObject = function(){
 	var o = custom_settings;
 	var a = this.serializeArray();
 	$j.each(a, function(){
-		if (o[this.name] !== undefined && this.name.indexOf("modmon") != -1 && this.name.indexOf("version") == -1){
-			if (!o[this.name].push){
+		if(o[this.name] !== undefined && this.name.indexOf("modmon") != -1 && this.name.indexOf("version") == -1){
+			if(!o[this.name].push){
 				o[this.name] = [o[this.name]];
 			}
 			o[this.name].push(this.value || '');
-		} else if (this.name.indexOf("modmon") != -1 && this.name.indexOf("version") == -1){
+		} else if(this.name.indexOf("modmon") != -1 && this.name.indexOf("version") == -1){
 			o[this.name] = this.value || '';
 		}
 	});
@@ -518,11 +564,11 @@ function initial(){
 	
 	var metrictablehtml="";
 	
-	for (i = 0; i < metriclist.length; i++){
+	for(i = 0; i < metriclist.length; i++){
 		metrictablehtml += BuildMetricTable(metriclist[i],titlelist[i],i);
 	}
 	
-	$j("#table_buttons2").after(metrictablehtml);
+	$j("#table_config").after(metrictablehtml);
 	
 	$j("#table_config").after(BuildModemLogsTable());
 	
@@ -534,7 +580,7 @@ function ScriptUpdateLayout(){
 	var serverver = GetVersionNumber("server");
 	$j("#modmon_version_local").text(localver);
 	
-	if (localver != serverver && serverver != "N/A"){
+	if(localver != serverver && serverver != "N/A"){
 		$j("#modmon_version_server").text("Updated version available: "+serverver);
 		showhide("btnChkUpdate", false);
 		showhide("modmon_version_server", true);
@@ -546,11 +592,22 @@ function reload(){
 	location.reload(true);
 }
 
+function getChartScale(scale){
+	var chartscale = "";
+	if(scale == 0){
+		chartscale = "linear";
+	}
+	else if(scale == 1){
+		chartscale = "logarithmic";
+	}
+	return chartscale;
+}
+
 function getChartPeriod(period){
 	var chartperiod = "daily";
-	if (period == 0) chartperiod = "daily";
-	else if (period == 1) chartperiod = "weekly";
-	else if (period == 2) chartperiod = "monthly";
+	if(period == 0) chartperiod = "daily";
+	else if(period == 1) chartperiod = "weekly";
+	else if(period == 2) chartperiod = "monthly";
 	return chartperiod;
 }
 
@@ -605,7 +662,7 @@ function update_status(){
 			setTimeout(update_status, 1000);
 		},
 		success: function(){
-			if (updatestatus == "InProgress"){
+			if(updatestatus == "InProgress"){
 				setTimeout(update_status, 1000);
 			}
 			else{
@@ -635,20 +692,16 @@ function CheckUpdate(){
 }
 
 function DoUpdate(){
-	var action_script_tmp = "start_modmondoupdate";
-	document.form.action_script.value = action_script_tmp;
-	var restart_time = 10;
-	document.form.action_wait.value = restart_time;
+	document.form.action_script.value = "start_modmondoupdate";
+	document.form.action_wait.value = 10;
 	showLoading();
 	document.form.submit();
 }
 
 function SaveConfig(){
 	document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject())
-	var action_script_tmp = "start_modmonconfig";
-	document.form.action_script.value = action_script_tmp;
-	var restart_time = 5;
-	document.form.action_wait.value = restart_time;
+	document.form.action_script.value = "start_modmonconfig";
+	document.form.action_wait.value = 5;
 	showLoading();
 	document.form.submit();
 }
@@ -662,10 +715,10 @@ function update_modtest(){
 			setTimeout(update_modtest, 1000);
 		},
 		success: function(){
-			if (modmonstatus == "InProgress"){
+			if(modmonstatus == "InProgress"){
 				setTimeout(update_modtest, 1000);
 			}
-			else if (modmonstatus == "Done"){
+			else if(modmonstatus == "Done"){
 				document.getElementById("modupdate_text").innerHTML = "Refreshing charts...";
 				PostModUpdate();
 			}
@@ -687,11 +740,11 @@ function PostModUpdate(){
 function ResetLayout(){
 	var metrictablehtml="";
 	
-	for (i = 0; i < metriclist.length; i++){
+	for(i = 0; i < metriclist.length; i++){
 		metrictablehtml += BuildMetricTable(metriclist[i],titlelist[i],i);
 	}
 	
-	$j("#table_buttons2").after(metrictablehtml);
+	$j("#table_config").after(metrictablehtml);
 	$j("#table_config").after(BuildModemLogsTable());
 	RedrawAllCharts();
 }
@@ -739,7 +792,7 @@ function get_conf_file(){
 			var configdata=data.split("\n");
 			configdata = configdata.filter(Boolean);
 			
-			for (var i = 0; i < configdata.length; i++){
+			for(var i = 0; i < configdata.length; i++){
 				eval("document.form.modmon_"+configdata[i].split("=")[0].toLowerCase()).value = configdata[i].split("=")[1].replace(/(\r\n|\n|\r)/gm,"");
 			}
 		}
@@ -757,6 +810,32 @@ function BuildMetricTable(name,title,loopindex){
 		charthtml+='</tr>';
 		charthtml+='</thead>';
 		charthtml+='<tr><td align="center" style="padding: 0px;">';
+		charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons2">';
+		charthtml+='<thead class="collapsible-jquery" id="charttools">';
+		charthtml+='<tr><td colspan="2">Chart Display Options (click to expand/collapse)</td></tr>';
+		charthtml+='</thead>';
+		charthtml+='<tr>';
+		charthtml+='<th width="20%"><span style="color:#FFFFFF;background:#2F3A3E;">Time format</span><br /><span style="color:#FFCC00;background:#2F3A3E;">(for tooltips and Last 24h chart axis)</span></th>';
+		charthtml+='<td>';
+		charthtml+='<select style="width:100px" class="input_option" onchange="changeAllCharts(this)" id="Time_Format">';
+		charthtml+='<option value="0">24h</option>';
+		charthtml+='<option value="1">12h</option>';
+		charthtml+='</select>';
+		charthtml+='</td>';
+		charthtml+='</tr>';
+		charthtml+='<tr class="apply_gen" valign="top">';
+		charthtml+='<td style="background-color:rgb(77, 89, 93);" colspan="2">';
+		charthtml+='<input type="button" onclick="ToggleDragZoom(this);" value="Drag Zoom On" class="button_gen" name="button">';
+		charthtml+='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+		charthtml+='<input type="button" onclick="ResetZoom();" value="Reset Zoom" class="button_gen" name="button">';
+		charthtml+='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+		charthtml+='<input type="button" onclick="ToggleLines();" value="Toggle Lines" class="button_gen" name="button">';
+		charthtml+='</td>';
+		charthtml+='</tr>';
+		charthtml+='</table>';
+		charthtml+='<div style="line-height:10px;">&nbsp;</div>';
+		
+		
 	}
 	
 	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_metric_'+name+'">';
@@ -768,13 +847,22 @@ function BuildMetricTable(name,title,loopindex){
 	charthtml+='<tr class="even">';
 	charthtml+='<th width="40%">Period to display</th>';
 	charthtml+='<td>';
-	charthtml+='<select style="width:125px" class="input_option" onchange="changeChart(this)" id="'+name+'_Period">';
+	charthtml+='<select style="width:150px" class="input_option" onchange="changeChart(this)" id="'+name+'_Period">';
 	charthtml+='<option value="0">Last 24 hours</option>';
 	charthtml+='<option value="1">Last 7 days</option>';
 	charthtml+='<option value="2">Last 30 days</option>';
 	charthtml+='</select>';
 	charthtml+='</td>';
 	charthtml+='</tr>';
+	/*charthtml+='<tr class="even">';
+	charthtml+='<th width="40%">Scale type</th>';
+	charthtml+='<td>';
+	charthtml+='<select style="width:150px" class="input_option" onchange="changeChart(this)" id="'+name+'_Scale">';
+	charthtml+='<option value="0">Linear</option>';
+	charthtml+='<option value="1">Logarithmic</option>';
+	charthtml+='</select>';
+	charthtml+='</td>';
+	charthtml+='</tr>';*/
 	charthtml+='<tr>';
 	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
 	charthtml+='<div style="background-color:#2f3e44;border-radius:10px;width:730px;padding-left:5px;"><canvas id="divLineChart_'+name+'" height="500" /></div>';
@@ -832,7 +920,7 @@ function BuildChannelFilterRow(rxtx,title,channelcount){
 	channelhtml+='<col style="width:60px;">';
 	channelhtml+='<col style="width:60px;">';
 	channelhtml+='<tr>';
-	for (channelno = 1; channelno < channelcount+1; channelno++){
+	for(channelno = 1; channelno < channelcount+1; channelno++){
 		channelhtml+='<td class="channelcell"><input type="checkbox" onchange="ToggleDataset(this);" name="'+rxtx+'opt'+channelno+'" id="'+rxtx+'opt'+channelno+'" checked/><label class="radio filtervalue">Ch. '+channelno+'</label></td>';
 		if(channelno % 12 == 0){
 			channelhtml+='</tr><tr>';
