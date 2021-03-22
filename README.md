@@ -45,9 +45,9 @@ If this does not work, you will need to use the full path:
 
 ## Screenshots
 
-![WebUI](https://puu.sh/GFIhF/4b2b21c3fd.png)
+![WebUI](https://puu.sh/Hry9G/74c63b43ee.png)
 
-![CLI UI](https://puu.sh/GFIfe/0ed3bef03d.png)
+![CLI UI](https://puu.sh/Hry5U/64561d7d35.png)
 
 ## Help
 Please post about any issues and problems here: [Asuswrt-Merlin AddOns on SNBForums](https://www.snbforums.com/forums/asuswrt-merlin-addons.60/?prefix_id=21)
