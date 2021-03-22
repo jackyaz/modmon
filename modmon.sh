@@ -1366,6 +1366,9 @@ case "$1" in
 		Auto_Cron create 2>/dev/null
 		Auto_ServiceEvent create 2>/dev/null
 		Shortcut_Script create
+		Set_Version_Custom_Settings local "$SCRIPT_VERSION"
+		Set_Version_Custom_Settings server "$SCRIPT_VERSION"
+		exit 0
 	;;
 	postupdate)
 		Create_Dirs
@@ -1376,6 +1379,7 @@ case "$1" in
 		Auto_Cron create 2>/dev/null
 		Auto_ServiceEvent create 2>/dev/null
 		Shortcut_Script create
+		exit 0
 	;;
 	checkupdate)
 		Update_Check
