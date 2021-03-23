@@ -529,7 +529,7 @@ function GetCookie(cookiename,returntype){
 }
 
 function SetCookie(cookiename,cookievalue){
-	cookie.set("mod_"+cookiename, cookievalue, 31);
+	cookie.set("mod_"+cookiename, cookievalue, 10 * 365 * 24 * 60 * 60);
 }
 
 $j.fn.serializeObject = function(){
