@@ -374,7 +374,7 @@ function getRandomColor(){
 
 function poolColors(a){
 	var pool = [];
-	for(i = 0; i < a; i++){
+	for(var i = 0; i < a; i++){
 		pool.push(getRandomColor());
 	}
 	return pool;
@@ -388,7 +388,7 @@ function SetRxTxColours(){
 function GetMaxChannels(){
 	var RxCountArray = [];
 	var TxCountArray = [];
-	for(i = 0; i < metriclist.length; i++){
+	for(var i = 0; i < metriclist.length; i++){
 		var varname="LineChart_"+metriclist[i];
 		var channelcount=window[varname].data.datasets.length;
 		if(varname.indexOf("Rx") != -1){
@@ -411,8 +411,8 @@ function ToggleLines(){
 		ShowLines = "";
 		SetCookie("ShowLines","");
 	}
-	for(i = 0; i < metriclist.length; i++){
-		for(i3 = 0; i3 < 3; i3++){
+	for(var i = 0; i < metriclist.length; i++){
+		for(var i3 = 0; i3 < 3; i3++){
 			window["LineChart_"+metriclist[i]].options.annotation.annotations[i3].type=ShowLines;
 		}
 		window["LineChart_"+metriclist[i]].update();
@@ -445,8 +445,8 @@ function changeChart(e) {
 }
 
 function RedrawAllCharts(){
-	for(i = 0; i < metriclist.length; i++){
-		for(i2 = 0; i2 < chartlist.length; i2++){
+	for(var i = 0; i < metriclist.length; i++){
+		for(var i2 = 0; i2 < chartlist.length; i2++){
 			d3.csv("/ext/modmon/csv/"+metriclist[i]+chartlist[i2]+".htm").then(ProcessChart.bind(null,i,i2));
 		}
 	}
@@ -456,7 +456,7 @@ function changeAllCharts(e){
 	value = e.value * 1;
 	name = e.id.substring(0, e.id.indexOf("_"));
 	SetCookie(e.id,value);
-	for(i = 0; i < metriclist.length; i++){
+	for(var i = 0; i < metriclist.length; i++){
 		Draw_Chart(metriclist[i],titlelist[i],measureunitlist[i]);
 	}
 }
@@ -503,7 +503,7 @@ function ProcessChart(i1,i2,dataobject){
 		showhide("imgModUpdate", false);
 		showhide("modupdate_text", false);
 		showhide("btnUpdateStats", true);
-		for(i = 0; i < metriclist.length; i++){
+		for(var i = 0; i < metriclist.length; i++){
 			$j("#"+metriclist[i]+"_Period").val(GetCookie(metriclist[i]+"_Period","number"));
 			Draw_Chart(metriclist[i],titlelist[i],measureunitlist[i]);
 		}
@@ -564,7 +564,7 @@ function initial(){
 	
 	var metrictablehtml="";
 	
-	for(i = 0; i < metriclist.length; i++){
+	for(var i = 0; i < metriclist.length; i++){
 		metrictablehtml += BuildMetricTable(metriclist[i],titlelist[i],i);
 	}
 	
@@ -612,7 +612,7 @@ function getChartPeriod(period){
 }
 
 function ResetZoom(){
-	for(i = 0; i < metriclist.length; i++){
+	for(var i = 0; i < metriclist.length; i++){
 		var chartobj = window["LineChart_"+metriclist[i]];
 		if(typeof chartobj === 'undefined' || chartobj === null){ continue; }
 		chartobj.resetZoom();
@@ -638,7 +638,7 @@ function ToggleDragZoom(button){
 		buttonvalue = "Drag Zoom On";
 	}
 	
-	for(i = 0; i < metriclist.length; i++){
+	for(var i = 0; i < metriclist.length; i++){
 		var chartobj = window["LineChart_"+metriclist[i]];
 		if(typeof chartobj === 'undefined' || chartobj === null){ continue; }
 		chartobj.options.plugins.zoom.zoom.drag = drag;
@@ -740,7 +740,7 @@ function PostModUpdate(){
 function ResetLayout(){
 	var metrictablehtml="";
 	
-	for(i = 0; i < metriclist.length; i++){
+	for(var i = 0; i < metriclist.length; i++){
 		metrictablehtml += BuildMetricTable(metriclist[i],titlelist[i],i);
 	}
 	
@@ -978,7 +978,7 @@ function BuildModemLogsTable(){
 		window["DataPrio"].reverse();
 		window["DataText"].reverse();
 		
-		for(i = 0; i < objdataname.length; i++){
+		for(var i = 0; i < objdataname.length; i++){
 			tablehtml+='<tr>';
 			tablehtml+='<td>'+window["DataTimestamp"][i]+'</td>';
 			tablehtml+='<td>'+window["DataPrio"][i]+'</td>';
@@ -994,7 +994,7 @@ function BuildModemLogsTable(){
 }
 
 function ToggleDataset(checkbox){
-	for(i = 0; i < metriclist.length; i++){
+	for(var i = 0; i < metriclist.length; i++){
 		if(metriclist[i].toLowerCase().indexOf(checkbox.id.substring(0,2)) != -1){
 			window["LineChart_"+metriclist[i]].getDatasetMeta((checkbox.id.substring(5)*1)-1).hidden = ! checkbox.checked;
 			window["LineChart_"+metriclist[i]].update();
@@ -1009,12 +1009,12 @@ function SetAllChannels(button,setclear){
 	if(button.id.substring(0,2) == "rx"){rxtx="Rx";}
 	else{rxtx="Tx";}
 	if(startindex == 1){$j( "#"+rxtx.toLowerCase()+"opt1" ).prop("checked",true);}
-	for(i = 1 + startindex; i < window[rxtx+"Count"]+1; i++){
+	for(var i = 1 + startindex; i < window[rxtx+"Count"]+1; i++){
 		$j( "#"+rxtx.toLowerCase()+"opt"+i ).prop("checked",setclear);
 	}
-	for(i = 0; i < metriclist.length; i++){
+	for(var i = 0; i < metriclist.length; i++){
 		if(metriclist[i].indexOf(rxtx) != -1){
-			for(i3 = 0; i3 < window[rxtx+"Count"]; i3++){
+			for(var i3 = 0; i3 < window[rxtx+"Count"]; i3++){
 				window["LineChart_"+metriclist[i]].getDatasetMeta(i3).hidden = ! $j( "#"+rxtx.toLowerCase()+"opt"+(i3+1) ).prop("checked");
 			}
 			window["LineChart_"+metriclist[i]].update();
