@@ -1,16 +1,16 @@
 #!/bin/sh
 
-#########################################################
-##                        _                            ##
-##                       | |                           ##
-##  _ __ ___    ___    __| | _ __ ___    ___   _ __    ##
-## | '_ ` _ \  / _ \  / _` || '_ ` _ \  / _ \ | '_ \   ##
-## | | | | | || (_) || (_| || | | | | || (_) || | | |  ##
-## |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|  ##
-##                                                     ##
-##         https://github.com/jackyaz/modmon           ##
-##                                                     ##
-#########################################################
+############################################################
+##                          _                             ##
+##                         | |                            ##
+##    _ __ ___    ___    __| | _ __ ___    ___   _ __     ##
+##   | '_ ` _ \  / _ \  / _` || '_ ` _ \  / _ \ | '_ \    ##
+##   | | | | | || (_) || (_| || | | | | || (_) || | | |   ##
+##   |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|   ##
+##                                                        ##
+##           https://github.com/jackyaz/modmon            ##
+##                                                        ##
+############################################################
 
 #############        Shellcheck directives      #########
 # shellcheck disable=SC2018
@@ -38,7 +38,9 @@ readonly CRIT="\\e[41m"
 readonly ERR="\\e[31m"
 readonly WARN="\\e[33m"
 readonly PASS="\\e[32m"
-readonly SETTING="\\e[1m\\e[36m"
+readonly BOLD="\\e[1m"
+readonly SETTING="${BOLD}\\e[36m"
+readonly CLEARFORMAT="\\e[0m"
 ### End of output format variables ###
 
 # $1 = print to syslog, $2 = message to print, $3 = log level
@@ -46,7 +48,7 @@ Print_Output(){
 	if [ "$1" = "true" ]; then
 		logger -t "$SCRIPT_NAME" "$2"
 	fi
-	printf "\\e[1m${3}%s\\e[0m\\n\\n" "$2"
+	printf "${BOLD}${3}%s${CLEARFORMAT}\\n\\n" "$2"
 }
 
 Firmware_Version_Check(){
@@ -159,7 +161,7 @@ Update_Version(){
 		fi
 		
 		if [ "$isupdate" != "false" ]; then
-			printf "\\n\\e[1mDo you want to continue with the update? (y/n)\\e[0m  "
+			printf "\\n${BOLD}Do you want to continue with the update? (y/n)${CLEARFORMAT}  "
 			read -r confirm
 			case "$confirm" in
 				y|Y)
@@ -280,7 +282,6 @@ Conf_FromSettings(){
 			
 			ScriptStorageLocation "$(ScriptStorageLocation check)"
 			Create_Symlinks
-			
 			Generate_CSVs
 			
 			Print_Output true "Merge of updated settings from WebUI completed successfully" "$PASS"
@@ -320,7 +321,7 @@ Create_Symlinks(){
 	rm -rf "${SCRIPT_WEB_DIR:?}/"* 2>/dev/null
 	
 	ln -s /tmp/detect_modmon.js "$SCRIPT_WEB_DIR/detect_modmon.js" 2>/dev/null
-	ln -s "$SCRIPT_STORAGE_DIR/modlogs.js"  "$SCRIPT_WEB_DIR/modlogs.js" 2>/dev/null
+	ln -s "$SCRIPT_STORAGE_DIR/modlogs.htm"  "$SCRIPT_WEB_DIR/modlogs.htm" 2>/dev/null
 	ln -s "$SCRIPT_STORAGE_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
 	
 	ln -s "$SCRIPT_CONF" "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
@@ -337,11 +338,7 @@ Conf_Exists(){
 		dos2unix "$SCRIPT_CONF"
 		chmod 0644 "$SCRIPT_CONF"
 		sed -i -e 's/"//g' "$SCRIPT_CONF"
-		if [ "$(wc -l < "$SCRIPT_CONF")" -eq 2 ]; then
-			echo "STORAGELOCATION=jffs" >> "$SCRIPT_CONF"
-		fi
-		if [ "$(wc -l < "$SCRIPT_CONF")" -eq 3 ]; then
-			echo "FIXTXPWR=false" >> "$SCRIPT_CONF"
+		if ! grep -q "DAYSTOKEEP" "$SCRIPT_CONF"; then
 		fi
 		return 0
 	else
@@ -939,19 +936,19 @@ PressEnter(){
 ScriptHeader(){
 	clear
 	printf "\\n"
-	printf "\\e[1m#########################################################\\e[0m\\n"
-	printf "\\e[1m##                        _                            ##\\e[0m\\n"
-	printf "\\e[1m##                       | |                           ##\\e[0m\\n"
-	printf "\\e[1m##  _ __ ___    ___    __| | _ __ ___    ___   _ __    ##\\e[0m\\n"
-	printf "\\e[1m## |  _ \` _ \  / _ \  / _\` ||  _ \` _ \  / _ \ |  _ \   ##\\e[0m\\n"
-	printf "\\e[1m## | | | | | || (_) || (_| || | | | | || (_) || | | |  ##\\e[0m\\n"
-	printf "\\e[1m## |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|  ##\\e[0m\\n"
-	printf "\\e[1m##                                                     ##\\e[0m\\n"
-	printf "\\e[1m##                 %s on %-11s               ##\\e[0m\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
-	printf "\\e[1m##                                                     ##\\e[0m\\n"
-	printf "\\e[1m##          https://github.com/jackyaz/modmon          ##\\e[0m\\n"
-	printf "\\e[1m##                                                     ##\\e[0m\\n"
-	printf "\\e[1m#########################################################\\e[0m\\n"
+	printf "${BOLD}############################################################${CLEARFORMAT}\\n"
+	printf "${BOLD}##                          _                             ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                         | |                            ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##    _ __ ___    ___    __| | _ __ ___    ___   _ __     ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##   |  _ \` _ \  / _ \  / _\` ||  _ \` _ \  / _ \ |  _ \    ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##   | | | | | || (_) || (_| || | | | | || (_) || | | |   ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##   |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|   ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                   %s on %-11s                ##${CLEARFORMAT}\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
+	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##            https://github.com/jackyaz/modmon           ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
+	printf "${BOLD}############################################################${CLEARFORMAT}\\n"
 	printf "\\n"
 }
 
@@ -962,18 +959,18 @@ MainMenu(){
 	else
 		FIXTXPWR_MENU="Disabled"
 	fi
-	printf "WebUI for %s is available at:\\n${SETTING}%s\\e[0m\\n\\n" "$SCRIPT_NAME" "$(Get_WebUI_URL)"
+	printf "WebUI for %s is available at:\\n${SETTING}%s${CLEARFORMAT}\\n\\n" "$SCRIPT_NAME" "$(Get_WebUI_URL)"
 	printf "1.    Check stats now\\n\\n"
-	printf "2.    Toggle data output mode\\n      Currently ${SETTING}%s\\e[0m values will be used for weekly and monthly charts\\n\\n" "$(OutputDataMode check)"
-	printf "3.    Toggle time output mode\\n      Currently ${SETTING}%s\\e[0m time values will be used for CSV exports\\n\\n" "$(OutputTimeMode check)"
-	printf "s.    Toggle storage location for stats and config\\n      Current location is ${SETTING}%s\\e[0m \\n\\n" "$(ScriptStorageLocation check)"
-	printf "f.    Fix Upstream Power level reporting (reduce by 10x, needed in newer Hub 3 firmware)\\n      Currently: ${SETTING}%s\\e[0m \\n\\n" "$FIXTXPWR_MENU"
+	printf "2.    Toggle data output mode\\n      Currently ${SETTING}%s${CLEARFORMAT} values will be used for weekly and monthly charts\\n\\n" "$(OutputDataMode check)"
+	printf "3.    Toggle time output mode\\n      Currently ${SETTING}%s${CLEARFORMAT} time values will be used for CSV exports\\n\\n" "$(OutputTimeMode check)"
+	printf "s.    Toggle storage location for stats and config\\n      Current location is ${SETTING}%s${CLEARFORMAT} \\n\\n" "$(ScriptStorageLocation check)"
+	printf "f.    Fix Upstream Power level reporting (reduce by 10x, needed in newer Hub 3 firmware)\\n      Currently: ${SETTING}%s${CLEARFORMAT} \\n\\n" "$FIXTXPWR_MENU"
 	printf "u.    Check for updates\\n"
 	printf "uf.   Update %s with latest version (force update)\\n\\n" "$SCRIPT_NAME"
 	printf "e.    Exit %s\\n\\n" "$SCRIPT_NAME"
 	printf "z.    Uninstall %s\\n" "$SCRIPT_NAME"
 	printf "\\n"
-	printf "\\e[1m#########################################################\\e[0m\\n"
+	printf "${BOLD}############################################################${CLEARFORMAT}\\n"
 	printf "\\n"
 	
 	while true; do
@@ -1047,12 +1044,12 @@ MainMenu(){
 			;;
 			e)
 				ScriptHeader
-				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$SCRIPT_NAME"
+				printf "\\n${BOLD}Thanks for using %s!${CLEARFORMAT}\\n\\n\\n" "$SCRIPT_NAME"
 				exit 0
 			;;
 			z)
 				while true; do
-					printf "\\n\\e[1mAre you sure you want to uninstall %s? (y/n)\\e[0m  " "$SCRIPT_NAME"
+					printf "\\n${BOLD}Are you sure you want to uninstall %s? (y/n)${CLEARFORMAT}  " "$SCRIPT_NAME"
 					read -r confirm
 					case "$confirm" in
 						y|Y)
@@ -1193,7 +1190,7 @@ Menu_Uninstall(){
 	flock -u "$FD"
 	rm -f "$SCRIPT_DIR/modmonstats_www.asp" 2>/dev/null
 	rm -rf "$SCRIPT_WEB_DIR" 2>/dev/null
-	printf "\\n\\e[1mDo you want to delete %s stats? (y/n)\\e[0m  " "$SCRIPT_NAME"
+	printf "\\n${BOLD}Do you want to delete %s stats? (y/n)${CLEARFORMAT}  " "$SCRIPT_NAME"
 	read -r confirm
 	case "$confirm" in
 		y|Y)
