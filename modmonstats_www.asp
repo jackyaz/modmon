@@ -167,7 +167,17 @@ var RxCount,TxCount,RxColours,TxColours,$j=jQuery.noConflict(),arraysortlistline
 </td>
 </tr>
 </table>
-
+<div style="line-height:10px;">&nbsp;</div>
+<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_modemlogs">
+<thead class="collapsible-jquery" id="thead_modemlogs">
+<tr><td colspan="2">Modem Logs (click to expand/collapse)</td></tr>
+</thead>
+<tr>
+<td colspan="2" align="center" style="padding: 0px;">
+<div id="sortTableContainer" class="sortTableContainer"></div>
+</td>
+</tr>
+</table>
 <!-- Chart legend filters inserted here -->
 <!-- Charts inserted here -->
 </td>
