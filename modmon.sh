@@ -970,7 +970,6 @@ Process_Upgrade(){
 		rm -f /tmp/modmon-upgrade.sql
 		touch "$SCRIPT_STORAGE_DIR/.indexcreated"
 		Print_Output true "Database ready, continuing..." "$PASS"
-		Get_Modem_Stats
 		renice 0 $$
 	fi
 }
@@ -1224,7 +1223,6 @@ Menu_Install(){
 	rm -f /tmp/modmon-stats.sql
 	
 	Process_Upgrade
-	
 	Get_Modem_Stats
 	
 	Clear_Lock
