@@ -972,6 +972,9 @@ Process_Upgrade(){
 		Print_Output true "Database ready, continuing..." "$PASS"
 		renice 0 $$
 	fi
+	if [ ! -f "$SCRIPT_STORAGE_DIR/modlogs.htm" ]; then
+		Get_Modem_Stats
+	fi
 }
 
 Shortcut_Script(){
@@ -1222,6 +1225,7 @@ Menu_Install(){
 	done
 	rm -f /tmp/modmon-stats.sql
 	
+	touch "$SCRIPT_STORAGE_DIR/modlogs.htm"
 	Process_Upgrade
 	Get_Modem_Stats
 	
