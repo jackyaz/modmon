@@ -728,7 +728,8 @@ Get_Modem_Stats(){
 	Create_Symlinks
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
-	Auto_ServiceEvent create 2>/dev/null
+	Auto_ServiceEvent create 2>/dev/nul
+	Shortcut_Script create
 	
 	TZ=$(cat /etc/TZ)
 	export TZ
@@ -739,6 +740,8 @@ Get_Modem_Stats(){
 	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
 	
 	echo 'var modmonstatus = "InProgress";' > /tmp/detect_modmon.js
+	
+	Process_Upgrade
 	
 	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 	
@@ -796,6 +799,8 @@ Get_Modem_Stats(){
 }
 
 Generate_CSVs(){
+	Process_Upgrade
+	renice 15 $$
 	OUTPUTDATAMODE="$(OutputDataMode check)"
 	OUTPUTTIMEMODE="$(OutputTimeMode check)"
 	TZ=$(cat /etc/TZ)
@@ -935,6 +940,31 @@ Generate_CSVs(){
 	/opt/bin/7za a -y -bsp0 -bso0 -tzip "/tmp/${SCRIPT_NAME}data.zip" "$tmpoutputdir/*"
 	mv "/tmp/${SCRIPT_NAME}data.zip" "$CSV_OUTPUT_DIR"
 	rm -rf "$tmpoutputdir"
+	renice 0 $$
+}
+
+Process_Upgrade(){
+	if [ ! -f "$SCRIPT_STORAGE_DIR/.indexcreated" ]; then
+		renice 15 $$
+		Print_Output true "Creating database table indexes..." "$PASS"
+		
+		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+		for metric in $metriclist; do
+			echo "CREATE INDEX idx_${metric}_time_measurement ON [modstats_$metric] (Timestamp,Measurement);" > /tmp/modmon-upgrade.sql
+			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-upgrade.sql >/dev/null 2>&1; do
+				:
+			done
+			echo "CREATE INDEX idx_${metric}_channel_measurement ON [modstats_$metric] (ChannelNum,Measurement);" > /tmp/modmon-upgrade.sql
+			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-upgrade.sql >/dev/null 2>&1; do
+				:
+			done
+		done
+		rm -f /tmp/modmon-upgrade.sql
+		touch "$SCRIPT_STORAGE_DIR/.indexcreated"
+		Print_Output true "Database ready, continuing..." "$PASS"
+		Get_Modem_Stats
+		renice 0 $$
+	fi
 }
 
 Shortcut_Script(){
