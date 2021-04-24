@@ -76,6 +76,10 @@ Check_Lock(){
 			if [ -z "$1" ]; then
 				exit 1
 			else
+				if [ "$1" = "webui" ]; then
+					echo 'var modmonstatus = "LOCKED";' > /tmp/detect_modmon.js
+					exit 1
+				fi
 				return 1
 			fi
 		fi
@@ -766,33 +770,21 @@ Get_Modem_Stats(){
 			rm -f /tmp/modmon-stats.sql
 		done
 		
+		echo 'var modmonstatus = "GenerateCSV";' > /tmp/detect_modmon.js
 		Generate_CSVs
 		
-		logcount="$(grep -c "DevEv" $shstatsfile)"
-		counter=1
-		until [ $counter -gt "$logcount" ]; do
-			logtime="$(grep "DevEv" $shstatsfile | sed "$counter!d" | cut -d',' -f3 | sed 's/ /@/g')"
-			logprio="$(grep "DevEv" $shstatsfile | sed "$((counter+1))!d" | cut -d',' -f3 | sed 's/3/Critical/;s/4/Error/;s/5/Warning/;s/6/Notice/')"
-			logmessage="$(grep "DevEv" $shstatsfile | sed "$((counter+2))!d" | cut -d',' -f3  | sed 's/ /@/g')"
-			echo "$logtime $logprio $logmessage" >> /tmp/modlogs.csv
-			counter=$((counter + 3))
-		done
+		Generate_Modem_Logs
 		
-		rm -f "$SCRIPT_STORAGE_DIR/modlogs.js"
-		WritePlainData_ToJS "/tmp/modlogs.csv" "$SCRIPT_STORAGE_DIR/modlogs.js" "DataTimestamp" "DataPrio" "DataText"
-		
-		rm -f /tmp/modlogs.csv
 		
 		echo "Stats last updated: $timenowfriendly" > "/tmp/modstatstitle.txt"
 		WriteStats_ToJS /tmp/modstatstitle.txt "$SCRIPT_STORAGE_DIR/modstatstext.js" SetModStatsTitle statstitle
+		rm -f /tmp/modstatstitle.txt
 		Print_Output true "Cable modem stats successfully retrieved" "$PASS"
 		
 		echo 'var modmonstatus = "Done";' > /tmp/detect_modmon.js
-		
-		rm -f /tmp/modmon-stats.sql
-		rm -f /tmp/modstatstitle.txt
 	else
 		Print_Output true "Something went wrong trying to retrieve cable modem stats" "$ERR"
+		echo 'var modmonstatus = "ERROR";' > /tmp/detect_modmon.js
 	fi
 	
 	rm -f "$shstatsfile"
@@ -941,6 +933,22 @@ Generate_CSVs(){
 	mv "/tmp/${SCRIPT_NAME}data.zip" "$CSV_OUTPUT_DIR"
 	rm -rf "$tmpoutputdir"
 	renice 0 $$
+}
+
+Generate_Modem_Logs(){
+	rm -f "$SCRIPT_STORAGE_DIR/modlogs.js"
+	rm -f /tmp/modlogs.csv
+	logcount="$(grep -c "DevEv" $shstatsfile)"
+	counter=1
+	until [ $counter -gt "$logcount" ]; do
+		logtime="$(grep "DevEv" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+		logprio="$(grep "DevEv" $shstatsfile | sed "$((counter+1))!d" | cut -d',' -f3 | sed 's/3/Critical/;s/4/Error/;s/5/Warning/;s/6/Notice/')"
+		logmessage="$(grep "DevEv" $shstatsfile | sed "$((counter+2))!d" | cut -d',' -f3)"
+		echo "$logtime,$logprio,$logmessage" >> /tmp/modlogs.csv
+		counter=$((counter + 3))
+	done
+	
+	mv /tmp/modlogs.csv "$SCRIPT_STORAGE_DIR/modlogs.htm"
 }
 
 Process_Upgrade(){
