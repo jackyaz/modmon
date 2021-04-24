@@ -2,8 +2,8 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/jackyaz/modmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jackyaz/modmon&amp;utm_campaign=Badge_Grade)
 [![Build Status](https://travis-ci.com/jackyaz/modmon.svg?branch=master)](https://travis-ci.com/jackyaz/modmon)
 
-## v1.1.3
-### Updated on 2021-03-22
+## v1.1.4
+### Updated on 2021-04-24
 ## About
 modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries.
 
@@ -19,7 +19,7 @@ Love the script and want to support future development? Any and all donations gr
 [**Buy me a coffee**](https://www.buymeacoffee.com/jackyaz)
 
 ## Supported firmware versions
-You must be running firmware Merlin 384.15/384.13_4 or Fork 43E5 (or later) [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/)
+You must be running firmware Merlin 384.15/384.13_4 or Fork 43E5 (or later) [Asuswrt-Merlin](https://www.asuswrt-merlin.net/)
 
 ## Installation
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:

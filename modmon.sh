@@ -1,27 +1,29 @@
 #!/bin/sh
 
-#########################################################
-##                        _                            ##
-##                       | |                           ##
-##  _ __ ___    ___    __| | _ __ ___    ___   _ __    ##
-## | '_ ` _ \  / _ \  / _` || '_ ` _ \  / _ \ | '_ \   ##
-## | | | | | || (_) || (_| || | | | | || (_) || | | |  ##
-## |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|  ##
-##                                                     ##
-##         https://github.com/jackyaz/modmon           ##
-##                                                     ##
-#########################################################
+############################################################
+##                          _                             ##
+##                         | |                            ##
+##    _ __ ___    ___    __| | _ __ ___    ___   _ __     ##
+##   | '_ ` _ \  / _ \  / _` || '_ ` _ \  / _ \ | '_ \    ##
+##   | | | | | || (_) || (_| || | | | | || (_) || | | |   ##
+##   |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|   ##
+##                                                        ##
+##           https://github.com/jackyaz/modmon            ##
+##                                                        ##
+############################################################
 
-#############        Shellcheck directives      #########
+##############        Shellcheck directives      ###########
+# shellcheck disable=SC2009
+# shellcheck disable=SC2016
 # shellcheck disable=SC2018
 # shellcheck disable=SC2019
 # shellcheck disable=SC2059
-#########################################################
+############################################################
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v1.1.3"
-SCRIPT_BRANCH="master"
+readonly SCRIPT_VERSION="v1.1.4"
+SCRIPT_BRANCH="develop"
 SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
@@ -38,7 +40,9 @@ readonly CRIT="\\e[41m"
 readonly ERR="\\e[31m"
 readonly WARN="\\e[33m"
 readonly PASS="\\e[32m"
-readonly SETTING="\\e[1m\\e[36m"
+readonly BOLD="\\e[1m"
+readonly SETTING="${BOLD}\\e[36m"
+readonly CLEARFORMAT="\\e[0m"
 ### End of output format variables ###
 
 # $1 = print to syslog, $2 = message to print, $3 = log level
@@ -46,7 +50,7 @@ Print_Output(){
 	if [ "$1" = "true" ]; then
 		logger -t "$SCRIPT_NAME" "$2"
 	fi
-	printf "\\e[1m${3}%s\\e[0m\\n\\n" "$2"
+	printf "${BOLD}${3}%s${CLEARFORMAT}\\n\\n" "$2"
 }
 
 Firmware_Version_Check(){
@@ -72,6 +76,10 @@ Check_Lock(){
 			if [ -z "$1" ]; then
 				exit 1
 			else
+				if [ "$1" = "webui" ]; then
+					echo 'var modmonstatus = "LOCKED";' > /tmp/detect_modmon.js
+					exit 1
+				fi
 				return 1
 			fi
 		fi
@@ -159,7 +167,7 @@ Update_Version(){
 		fi
 		
 		if [ "$isupdate" != "false" ]; then
-			printf "\\n\\e[1mDo you want to continue with the update? (y/n)\\e[0m  "
+			printf "\\n${BOLD}Do you want to continue with the update? (y/n)${CLEARFORMAT}  "
 			read -r confirm
 			case "$confirm" in
 				y|Y)
@@ -269,7 +277,7 @@ Conf_FromSettings(){
 			while IFS='' read -r line || [ -n "$line" ]; do
 				SETTINGNAME="$(echo "$line" | cut -f1 -d'=' | awk '{ print toupper($1) }')"
 				SETTINGVALUE="$(echo "$line" | cut -f2 -d'=')"
-				sed -i "s/$SETTINGNAME=.*/$SETTINGNAME=$SETTINGVALUE/" "$SCRIPT_CONF"
+				sed -i "s~$SETTINGNAME=.*~$SETTINGNAME=$SETTINGVALUE~" "$SCRIPT_CONF"
 			done < "$TMPFILE"
 			grep 'modmon_version' "$SETTINGSFILE" > "$TMPFILE"
 			sed -i "\\~modmon_~d" "$SETTINGSFILE"
@@ -280,7 +288,6 @@ Conf_FromSettings(){
 			
 			ScriptStorageLocation "$(ScriptStorageLocation check)"
 			Create_Symlinks
-			
 			Generate_CSVs
 			
 			Print_Output true "Merge of updated settings from WebUI completed successfully" "$PASS"
@@ -320,7 +327,7 @@ Create_Symlinks(){
 	rm -rf "${SCRIPT_WEB_DIR:?}/"* 2>/dev/null
 	
 	ln -s /tmp/detect_modmon.js "$SCRIPT_WEB_DIR/detect_modmon.js" 2>/dev/null
-	ln -s "$SCRIPT_STORAGE_DIR/modlogs.js"  "$SCRIPT_WEB_DIR/modlogs.js" 2>/dev/null
+	ln -s "$SCRIPT_STORAGE_DIR/modlogs.htm"  "$SCRIPT_WEB_DIR/modlogs.htm" 2>/dev/null
 	ln -s "$SCRIPT_STORAGE_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
 	
 	ln -s "$SCRIPT_CONF" "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
@@ -337,15 +344,12 @@ Conf_Exists(){
 		dos2unix "$SCRIPT_CONF"
 		chmod 0644 "$SCRIPT_CONF"
 		sed -i -e 's/"//g' "$SCRIPT_CONF"
-		if [ "$(wc -l < "$SCRIPT_CONF")" -eq 2 ]; then
-			echo "STORAGELOCATION=jffs" >> "$SCRIPT_CONF"
-		fi
-		if [ "$(wc -l < "$SCRIPT_CONF")" -eq 3 ]; then
-			echo "FIXTXPWR=false" >> "$SCRIPT_CONF"
+		if ! grep -q "DAYSTOKEEP" "$SCRIPT_CONF"; then
+			echo "DAYSTOKEEP=30" >> "$SCRIPT_CONF"
 		fi
 		return 0
 	else
-		{ echo "OUTPUTDATAMODE=average"; echo "OUTPUTTIMEMODE=unix"; echo "STORAGELOCATION=jffs"; echo "FIXTXPWR=false"; } > "$SCRIPT_CONF"
+		{ echo "OUTPUTDATAMODE=average"; echo "OUTPUTTIMEMODE=unix"; echo "STORAGELOCATION=jffs"; echo "FIXTXPWR=false"; echo "DAYSTOKEEP=30"; } > "$SCRIPT_CONF"
 		return 1
 	fi
 }
@@ -355,7 +359,6 @@ Auto_ServiceEvent(){
 		create)
 			if [ -f /jffs/scripts/service-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/service-event)
-				# shellcheck disable=SC2016
 				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME service_event"' "$@" & # '"$SCRIPT_NAME" /jffs/scripts/service-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
@@ -363,13 +366,11 @@ Auto_ServiceEvent(){
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					# shellcheck disable=SC2016
 					echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$@" & # '"$SCRIPT_NAME" >> /jffs/scripts/service-event
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/service-event
 				echo "" >> /jffs/scripts/service-event
-				# shellcheck disable=SC2016
 				echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$@" & # '"$SCRIPT_NAME" >> /jffs/scripts/service-event
 				chmod 0755 /jffs/scripts/service-event
 			fi
@@ -641,21 +642,43 @@ FixTxPwr(){
 	esac
 }
 
-WritePlainData_ToJS(){
-	inputfile="$1"
-	outputfile="$2"
-	shift;shift
-	i=0
-	for var in "$@"; do
-		i=$((i+1))
-		{
-			echo "var $var;"
-			echo "$var = [];"
-			echo "${var}.unshift('$(awk -v i=$i '{printf t $i} {t=","}' "$inputfile" | sed "s~,~\\',\\'~g")');"
-			echo
-		} >> "$outputfile"
-	done
-	sed -i 's/@/ /g' "$outputfile"
+DaysToKeep(){
+	case "$1" in
+		update)
+			daystokeep=30
+			exitmenu=""
+			ScriptHeader
+			while true; do
+				printf "\\n${BOLD}Please enter the desired number of days\\nto keep data for (30-365 days):${CLEARFORMAT}  "
+				read -r daystokeep_choice
+				
+				if [ "$daystokeep_choice" = "e" ]; then
+					exitmenu="exit"
+					break
+				elif ! Validate_Number "$daystokeep_choice"; then
+					printf "\\n${ERR}Please enter a valid number (30-365)${CLEARFORMAT}\\n"
+				elif [ "$daystokeep_choice" -lt 30 ] || [ "$daystokeep_choice" -gt 365 ]; then
+						printf "\\n${ERR}Please enter a number between 30 and 365${CLEARFORMAT}\\n"
+				else
+					daystokeep="$daystokeep_choice"
+					printf "\\n"
+					break
+				fi
+			done
+			
+			if [ "$exitmenu" != "exit" ]; then
+				sed -i 's/^DAYSTOKEEP.*$/DAYSTOKEEP='"$daystokeep"'/' "$SCRIPT_CONF"
+				return 0
+			else
+				printf "\\n"
+				return 1
+			fi
+		;;
+		check)
+			DAYSTOKEEP=$(grep "DAYSTOKEEP" "$SCRIPT_CONF" | cut -f2 -d"=")
+			echo "$DAYSTOKEEP"
+		;;
+	esac
 }
 
 WriteStats_ToJS(){
@@ -677,7 +700,7 @@ WriteSql_ToFile(){
 	{
 		echo ".mode csv"
 		echo ".headers on"
-		echo ".output ${5}${6}.htm"
+		echo ".output ${5}_${6}.htm"
 	} > "$7"
 	
 	dividefactor=1
@@ -689,17 +712,28 @@ WriteSql_ToFile(){
 		dividefactor=10
 	fi
 	
-	echo "SELECT ('Ch. ' || [ChannelNum]) Channel, Min([Timestamp]) Time, IFNULL(Avg([$1])/$dividefactor,'NaN') Value FROM $2 WHERE ([Timestamp] >= $timenow - ($multiplier*$maxcount)) GROUP BY Channel,([Timestamp]/($multiplier)) ORDER BY [ChannelNum] ASC;" >> "$7"
+	echo "SELECT ('Ch. ' || [ChannelNum]) Channel,Min([Timestamp]) Time,IFNULL(Avg([$1])/$dividefactor,'NaN') Value FROM $2 WHERE ([Timestamp] >= $timenow - ($multiplier*$maxcount)) GROUP BY Channel,([Timestamp]/($multiplier)) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;" >> "$7"
 }
 
 Get_Modem_Stats(){
+	if [ ! -f /opt/bin/xargs ]; then
+		Print_Output true "Installing findutils from Entware"
+		opkg update
+		opkg install findutils
+	fi
+	if [ -n "$PPID" ]; then
+		ps | grep -v grep | grep -v $$ | grep -v "$PPID" | grep -i "$SCRIPT_NAME" | grep generate | awk '{print $1}' | xargs kill -9 >/dev/null 2>&1
+	else
+		ps | grep -v grep | grep -v $$ | grep -i "$SCRIPT_NAME" | grep generate | awk '{print $1}' | xargs kill -9 >/dev/null 2>&1
+	fi
 	Create_Dirs
 	Conf_Exists
 	ScriptStorageLocation load
 	Create_Symlinks
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
-	Auto_ServiceEvent create 2>/dev/null
+	Auto_ServiceEvent create 2>/dev/nul
+	Shortcut_Script create
 	
 	TZ=$(cat /etc/TZ)
 	export TZ
@@ -711,12 +745,13 @@ Get_Modem_Stats(){
 	
 	echo 'var modmonstatus = "InProgress";' > /tmp/detect_modmon.js
 	
+	Process_Upgrade
+	
 	/usr/sbin/curl -fs --retry 3 --connect-timeout 15 "http://192.168.100.1/getRouterStatus" | sed s/1.3.6.1.2.1.10.127.1.1.1.1.6/RxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.1/TxPwr/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.2/TxT3Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.2.1.3/TxT4Out/ | sed s/1.3.6.1.4.1.4491.2.1.20.1.24.1.1/RxMer/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.4/RxPstRs/ | sed s/1.3.6.1.2.1.10.127.1.1.4.1.5/RxSnr/ | sed s/1.3.6.1.2.1.69.1.5.8.1.2/DevEvFirstTimeOid/ | sed s/1.3.6.1.2.1.69.1.5.8.1.5/DevEvId/ | sed s/1.3.6.1.2.1.69.1.5.8.1.7/DevEvText/ | sed 's/"//g' | sed 's/,$//g' | sed 's/\./,/' | sed 's/:/,/' | grep "^[A-Za-z]" > "$shstatsfile"
 	
 	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
 		for metric in $metriclist; do
-		{
-			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
+			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 			
@@ -730,45 +765,34 @@ Get_Modem_Stats(){
 			done
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			
-			echo "DELETE FROM [modstats_$metric] WHERE [Timestamp] < ($timenow - (86400*30));" > /tmp/modmon-stats.sql
+			echo "DELETE FROM [modstats_$metric] WHERE [Timestamp] < strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'));" > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
-		}
 		done
 		
+		echo 'var modmonstatus = "GenerateCSV";' > /tmp/detect_modmon.js
 		Generate_CSVs
 		
-		logcount="$(grep -c "DevEv" $shstatsfile)"
-		counter=1
-		until [ $counter -gt "$logcount" ]; do
-			logtime="$(grep "DevEv" $shstatsfile | sed "$counter!d" | cut -d',' -f3 | sed 's/ /@/g')"
-			logprio="$(grep "DevEv" $shstatsfile | sed "$((counter+1))!d" | cut -d',' -f3 | sed 's/3/Critical/;s/4/Error/;s/5/Warning/;s/6/Notice/')"
-			logmessage="$(grep "DevEv" $shstatsfile | sed "$((counter+2))!d" | cut -d',' -f3  | sed 's/ /@/g')"
-			echo "$logtime $logprio $logmessage" >> /tmp/modlogs.csv
-			counter=$((counter + 3))
-		done
+		Generate_Modem_Logs
 		
-		rm -f "$SCRIPT_STORAGE_DIR/modlogs.js"
-		WritePlainData_ToJS "/tmp/modlogs.csv" "$SCRIPT_STORAGE_DIR/modlogs.js" "DataTimestamp" "DataPrio" "DataText"
-		
-		rm -f /tmp/modlogs.csv
 		
 		echo "Stats last updated: $timenowfriendly" > "/tmp/modstatstitle.txt"
 		WriteStats_ToJS /tmp/modstatstitle.txt "$SCRIPT_STORAGE_DIR/modstatstext.js" SetModStatsTitle statstitle
+		rm -f /tmp/modstatstitle.txt
 		Print_Output true "Cable modem stats successfully retrieved" "$PASS"
 		
 		echo 'var modmonstatus = "Done";' > /tmp/detect_modmon.js
-		
-		rm -f /tmp/modmon-stats.sql
-		rm -f /tmp/modstatstitle.txt
 	else
 		Print_Output true "Something went wrong trying to retrieve cable modem stats" "$ERR"
+		echo 'var modmonstatus = "ERROR";' > /tmp/detect_modmon.js
 	fi
 	
 	rm -f "$shstatsfile"
 }
 
 Generate_CSVs(){
+	Process_Upgrade
+	renice 15 $$
 	OUTPUTDATAMODE="$(OutputDataMode check)"
 	OUTPUTTIMEMODE="$(OutputTimeMode check)"
 	TZ=$(cat /etc/TZ)
@@ -792,8 +816,8 @@ Generate_CSVs(){
 		{
 			echo ".mode csv"
 			echo ".headers on"
-			echo ".output $CSV_OUTPUT_DIR/${metric}daily.htm"
-			echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= $timenow - 86400) ORDER BY [ChannelNum] ASC;"
+			echo ".output $CSV_OUTPUT_DIR/${metric}_daily.htm"
+			echo "SELECT ('Ch. ' || [ChannelNum]) Channel,[Timestamp] Time,([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-1 day'))) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;"
 		} > /tmp/modmon-stats.sql
 		"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 		
@@ -801,16 +825,16 @@ Generate_CSVs(){
 			{
 				echo ".mode csv"
 				echo ".headers on"
-				echo ".output $CSV_OUTPUT_DIR/${metric}weekly.htm"
-				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*7) ORDER BY [ChannelNum] ASC;"
+				echo ".output $CSV_OUTPUT_DIR/${metric}_weekly.htm"
+				echo "SELECT ('Ch. ' || [ChannelNum]) Channel,[Timestamp] Time,([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-7 day'))) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;"
 			} > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			
 			{
 				echo ".mode csv"
 				echo ".headers on"
-				echo ".output $CSV_OUTPUT_DIR/${metric}monthly.htm"
-				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [ChannelNum] ASC;"
+				echo ".output $CSV_OUTPUT_DIR/${metric}_monthly.htm"
+				echo "SELECT ('Ch. ' || [ChannelNum]) Channel,[Timestamp] Time,([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-30 day'))) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;"
 			} > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 		elif [ "$OUTPUTDATAMODE" = "average" ]; then
@@ -820,6 +844,9 @@ Generate_CSVs(){
 			WriteSql_ToFile Measurement "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric" monthly /tmp/modmon-stats.sql "$timenow"
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 		fi
+		rm -f "$CSV_OUTPUT_DIR/${metric}daily.htm"
+		rm -f "$CSV_OUTPUT_DIR/${metric}weekly.htm"
+		rm -f "$CSV_OUTPUT_DIR/${metric}monthly.htm"
 	}
 	done
 	
@@ -829,7 +856,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_RxTimes.htm"
-		echo "SELECT [Timestamp] FROM modstats_RxPwr WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Timestamp] FROM modstats_RxPwr ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -837,7 +864,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_TxTimes.htm"
-		echo "SELECT [Timestamp] FROM modstats_TxPwr WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Timestamp] FROM modstats_TxPwr ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -845,7 +872,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_RxChannels.htm"
-		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_RxPwr WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [Timestamp] DESC;"
+		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_RxPwr ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -853,7 +880,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_TxChannels.htm"
-		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_TxPwr WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [Timestamp] DESC;"
+		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_TxPwr ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -863,7 +890,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_$metric.htm"
-		echo "SELECT [Measurement] $metric FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Measurement] $metric FROM modstats_$metric ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	done
@@ -905,6 +932,50 @@ Generate_CSVs(){
 	/opt/bin/7za a -y -bsp0 -bso0 -tzip "/tmp/${SCRIPT_NAME}data.zip" "$tmpoutputdir/*"
 	mv "/tmp/${SCRIPT_NAME}data.zip" "$CSV_OUTPUT_DIR"
 	rm -rf "$tmpoutputdir"
+	renice 0 $$
+}
+
+Generate_Modem_Logs(){
+	rm -f "$SCRIPT_STORAGE_DIR/modlogs.js"
+	rm -f /tmp/modlogs.csv
+	logcount="$(grep -c "DevEv" $shstatsfile)"
+	counter=1
+	until [ $counter -gt "$logcount" ]; do
+		logtime="$(grep "DevEv" $shstatsfile | sed "$counter!d" | cut -d',' -f3)"
+		logprio="$(grep "DevEv" $shstatsfile | sed "$((counter+1))!d" | cut -d',' -f3 | sed 's/3/Critical/;s/4/Error/;s/5/Warning/;s/6/Notice/')"
+		logmessage="$(grep "DevEv" $shstatsfile | sed "$((counter+2))!d" | cut -d',' -f3)"
+		echo "$logtime,$logprio,$logmessage" >> /tmp/modlogs.csv
+		counter=$((counter + 3))
+	done
+	
+	mv /tmp/modlogs.csv "$SCRIPT_STORAGE_DIR/modlogs.htm"
+}
+
+Process_Upgrade(){
+	if [ ! -f "$SCRIPT_STORAGE_DIR/.indexcreated" ]; then
+		renice 15 $$
+		Print_Output true "Creating database table indexes..." "$PASS"
+		
+		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+		for metric in $metriclist; do
+			echo "CREATE INDEX idx_${metric}_time_measurement ON [modstats_$metric] (Timestamp,Measurement);" > /tmp/modmon-upgrade.sql
+			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-upgrade.sql >/dev/null 2>&1; do
+				:
+			done
+			echo "CREATE INDEX idx_${metric}_channel_measurement ON [modstats_$metric] (ChannelNum,Measurement);" > /tmp/modmon-upgrade.sql
+			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-upgrade.sql >/dev/null 2>&1; do
+				:
+			done
+		done
+		rm -f /tmp/modmon-upgrade.sql
+		touch "$SCRIPT_STORAGE_DIR/.indexcreated"
+		Print_Output true "Database ready, continuing..." "$PASS"
+		renice 0 $$
+	fi
+	if [ ! -f "$SCRIPT_STORAGE_DIR/modlogs.htm" ]; then
+		touch "$SCRIPT_STORAGE_DIR/modlogs.htm"
+		Get_Modem_Stats
+	fi
 }
 
 Shortcut_Script(){
@@ -939,19 +1010,19 @@ PressEnter(){
 ScriptHeader(){
 	clear
 	printf "\\n"
-	printf "\\e[1m#########################################################\\e[0m\\n"
-	printf "\\e[1m##                        _                            ##\\e[0m\\n"
-	printf "\\e[1m##                       | |                           ##\\e[0m\\n"
-	printf "\\e[1m##  _ __ ___    ___    __| | _ __ ___    ___   _ __    ##\\e[0m\\n"
-	printf "\\e[1m## |  _ \` _ \  / _ \  / _\` ||  _ \` _ \  / _ \ |  _ \   ##\\e[0m\\n"
-	printf "\\e[1m## | | | | | || (_) || (_| || | | | | || (_) || | | |  ##\\e[0m\\n"
-	printf "\\e[1m## |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|  ##\\e[0m\\n"
-	printf "\\e[1m##                                                     ##\\e[0m\\n"
-	printf "\\e[1m##                 %s on %-11s               ##\\e[0m\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
-	printf "\\e[1m##                                                     ##\\e[0m\\n"
-	printf "\\e[1m##          https://github.com/jackyaz/modmon          ##\\e[0m\\n"
-	printf "\\e[1m##                                                     ##\\e[0m\\n"
-	printf "\\e[1m#########################################################\\e[0m\\n"
+	printf "${BOLD}############################################################${CLEARFORMAT}\\n"
+	printf "${BOLD}##                          _                             ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                         | |                            ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##    _ __ ___    ___    __| | _ __ ___    ___   _ __     ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##   |  _ \` _ \  / _ \  / _\` ||  _ \` _ \  / _ \ |  _ \    ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##   | | | | | || (_) || (_| || | | | | || (_) || | | |   ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##   |_| |_| |_| \___/  \__,_||_| |_| |_| \___/ |_| |_|   ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                   %s on %-11s                ##${CLEARFORMAT}\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
+	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##            https://github.com/jackyaz/modmon           ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                                                        ##${CLEARFORMAT}\\n"
+	printf "${BOLD}############################################################${CLEARFORMAT}\\n"
 	printf "\\n"
 }
 
@@ -962,18 +1033,19 @@ MainMenu(){
 	else
 		FIXTXPWR_MENU="Disabled"
 	fi
-	printf "WebUI for %s is available at:\\n${SETTING}%s\\e[0m\\n\\n" "$SCRIPT_NAME" "$(Get_WebUI_URL)"
+	printf "WebUI for %s is available at:\\n${SETTING}%s${CLEARFORMAT}\\n\\n" "$SCRIPT_NAME" "$(Get_WebUI_URL)"
 	printf "1.    Check stats now\\n\\n"
-	printf "2.    Toggle data output mode\\n      Currently ${SETTING}%s\\e[0m values will be used for weekly and monthly charts\\n\\n" "$(OutputDataMode check)"
-	printf "3.    Toggle time output mode\\n      Currently ${SETTING}%s\\e[0m time values will be used for CSV exports\\n\\n" "$(OutputTimeMode check)"
-	printf "s.    Toggle storage location for stats and config\\n      Current location is ${SETTING}%s\\e[0m \\n\\n" "$(ScriptStorageLocation check)"
-	printf "f.    Fix Upstream Power level reporting (reduce by 10x, needed in newer Hub 3 firmware)\\n      Currently: ${SETTING}%s\\e[0m \\n\\n" "$FIXTXPWR_MENU"
+	printf "2.    Toggle data output mode\\n      Currently ${SETTING}%s${CLEARFORMAT} values will be used for weekly and monthly charts\\n\\n" "$(OutputDataMode check)"
+	printf "3.    Toggle time output mode\\n      Currently ${SETTING}%s${CLEARFORMAT} time values will be used for CSV exports\\n\\n" "$(OutputTimeMode check)"
+	printf "4.    Set number of days data to keep in database\\n      Currently: ${SETTING}%s days data will be kept${CLEARFORMAT}\\n\\n" "$(DaysToKeep check)"
+	printf "s.    Toggle storage location for stats and config\\n      Current location is ${SETTING}%s${CLEARFORMAT} \\n\\n" "$(ScriptStorageLocation check)"
+	printf "f.    Fix Upstream Power level reporting (reduce by 10x, needed in newer Hub 3 firmware)\\n      Currently: ${SETTING}%s${CLEARFORMAT} \\n\\n" "$FIXTXPWR_MENU"
 	printf "u.    Check for updates\\n"
 	printf "uf.   Update %s with latest version (force update)\\n\\n" "$SCRIPT_NAME"
 	printf "e.    Exit %s\\n\\n" "$SCRIPT_NAME"
 	printf "z.    Uninstall %s\\n" "$SCRIPT_NAME"
 	printf "\\n"
-	printf "\\e[1m#########################################################\\e[0m\\n"
+	printf "${BOLD}############################################################${CLEARFORMAT}\\n"
 	printf "\\n"
 	
 	while true; do
@@ -1005,6 +1077,12 @@ MainMenu(){
 				elif [ "$(OutputTimeMode check)" = "non-unix" ]; then
 					OutputTimeMode unix
 				fi
+				break
+			;;
+			4)
+				printf "\\n"
+				DaysToKeep update
+				PressEnter
 				break
 			;;
 			s)
@@ -1047,12 +1125,12 @@ MainMenu(){
 			;;
 			e)
 				ScriptHeader
-				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$SCRIPT_NAME"
+				printf "\\n${BOLD}Thanks for using %s!${CLEARFORMAT}\\n\\n\\n" "$SCRIPT_NAME"
 				exit 0
 			;;
 			z)
 				while true; do
-					printf "\\n\\e[1mAre you sure you want to uninstall %s? (y/n)\\e[0m  " "$SCRIPT_NAME"
+					printf "\\n${BOLD}Are you sure you want to uninstall %s? (y/n)${CLEARFORMAT}  " "$SCRIPT_NAME"
 					read -r confirm
 					case "$confirm" in
 						y|Y)
@@ -1103,6 +1181,7 @@ Check_Requirements(){
 		opkg install sqlite3-cli
 		opkg install p7zip
 		opkg install coreutils-paste
+		opkg install findutils
 		return 0
 	else
 		return 1
@@ -1110,6 +1189,7 @@ Check_Requirements(){
 }
 
 Menu_Install(){
+	ScriptHeader
 	Print_Output true "Welcome to $SCRIPT_NAME $SCRIPT_VERSION, a script by JackYaz"
 	sleep 1
 	
@@ -1138,7 +1218,22 @@ Menu_Install(){
 	Auto_ServiceEvent create 2>/dev/null
 	Shortcut_Script create
 	
+	metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+	
+	for metric in $metriclist; do
+		echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
+		"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+	done
+	rm -f /tmp/modmon-stats.sql
+	
+	touch "$SCRIPT_STORAGE_DIR/modlogs.htm"
+	Process_Upgrade
+	Get_Modem_Stats
+	
 	Clear_Lock
+	
+	ScriptHeader
+	MainMenu
 }
 
 Menu_Startup(){
@@ -1175,6 +1270,11 @@ Menu_Startup(){
 
 Menu_Uninstall(){
 	Print_Output true "Removing $SCRIPT_NAME..." "$PASS"
+	if [ -n "$PPID" ]; then
+		ps | grep -v grep | grep -v $$ | grep -v "$PPID" | grep -i "$SCRIPT_NAME" | grep generate | awk '{print $1}' | xargs kill -9 >/dev/null 2>&1
+	else
+		ps | grep -v grep | grep -v $$ | grep -i "$SCRIPT_NAME" | grep generate | awk '{print $1}' | xargs kill -9 >/dev/null 2>&1
+	fi
 	Auto_Startup delete 2>/dev/null
 	Auto_Cron delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
@@ -1184,16 +1284,17 @@ Menu_Uninstall(){
 	eval exec "$FD>$LOCKFILE"
 	flock -x "$FD"
 	Get_WebUI_Page "$SCRIPT_DIR/modmonstats_www.asp"
-	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
+	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f /tmp/menuTree.js ]; then
 		sed -i "\\~$MyPage~d" /tmp/menuTree.js
 		umount /www/require/modules/menuTree.js
 		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
-		rm -rf "{$SCRIPT_WEBPAGE_DIR:?}/$MyPage"
+		rm -f "$SCRIPT_WEBPAGE_DIR/$MyPage"
+		rm -f "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	fi
 	flock -u "$FD"
 	rm -f "$SCRIPT_DIR/modmonstats_www.asp" 2>/dev/null
 	rm -rf "$SCRIPT_WEB_DIR" 2>/dev/null
-	printf "\\n\\e[1mDo you want to delete %s stats? (y/n)\\e[0m  " "$SCRIPT_NAME"
+	printf "\\n${BOLD}Do you want to delete %s stats? (y/n)${CLEARFORMAT}  " "$SCRIPT_NAME"
 	read -r confirm
 	case "$confirm" in
 		y|Y)
@@ -1313,6 +1414,7 @@ if [ -z "$1" ]; then
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Shortcut_Script create
+	Process_Upgrade
 	ScriptHeader
 	MainMenu
 	exit 0
@@ -1346,7 +1448,8 @@ case "$1" in
 	;;
 	service_event)
 		if [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME" ]; then
-			Check_Lock
+			rm -f /tmp/detect_modmon.js
+			Check_Lock webui
 			Get_Modem_Stats
 			Clear_Lock
 			exit 0
@@ -1370,19 +1473,6 @@ case "$1" in
 		Update_Version force
 		exit 0
 	;;
-	setversion)
-		Create_Dirs
-		Conf_Exists
-		ScriptStorageLocation load
-		Create_Symlinks
-		Auto_Startup create 2>/dev/null
-		Auto_Cron create 2>/dev/null
-		Auto_ServiceEvent create 2>/dev/null
-		Shortcut_Script create
-		Set_Version_Custom_Settings local "$SCRIPT_VERSION"
-		Set_Version_Custom_Settings server "$SCRIPT_VERSION"
-		exit 0
-	;;
 	postupdate)
 		Create_Dirs
 		Conf_Exists
@@ -1392,6 +1482,7 @@ case "$1" in
 		Auto_Cron create 2>/dev/null
 		Auto_ServiceEvent create 2>/dev/null
 		Shortcut_Script create
+		Process_Upgrade
 		exit 0
 	;;
 	checkupdate)
@@ -1399,7 +1490,6 @@ case "$1" in
 		exit 0
 	;;
 	uninstall)
-		Check_Lock
 		Menu_Uninstall
 		exit 0
 	;;
