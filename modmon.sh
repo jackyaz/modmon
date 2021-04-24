@@ -973,6 +973,7 @@ Process_Upgrade(){
 		renice 0 $$
 	fi
 	if [ ! -f "$SCRIPT_STORAGE_DIR/modlogs.htm" ]; then
+		touch "$SCRIPT_STORAGE_DIR/modlogs.htm"
 		Get_Modem_Stats
 	fi
 }
