@@ -136,6 +136,13 @@ var RxCount,TxCount,RxColours,TxColours,$j=jQuery.noConflict(),arraysortlistline
 <label for="modmon_timeoutput_unix">Unix</label>
 </td>
 </tr>
+<tr class="even" id="rowdaystokeep">
+<td class="settingname">Number of days of data to keep</td>
+<td class="settingvalue">
+<input autocomplete="off" type="text" maxlength="3" class="input_6_table removespacing" name="modmon_daystokeep" value="30" onkeypress="return validator.isNumber(this,event)" onblur="Validate_Number_Setting(this,365,30);Format_Number_Setting(this)" onkeyup="Validate_Number_Setting(this,365,30)"/>
+&nbsp;days <span style="color:#FFCC00;">(between 30 and 365, default: 30)</span>
+</td>
+</tr>
 <tr class="even" id="rowstorageloc">
 <td class="settingname">Data Storage Location</td>
 <td class="settingvalue">
