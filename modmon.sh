@@ -560,6 +560,7 @@ ScriptStorageLocation(){
 			mv "/jffs/addons/$SCRIPT_NAME.d/config.bak" "/opt/share/$SCRIPT_NAME.d/" 2>/dev/null
 			mv "/jffs/addons/$SCRIPT_NAME.d/modstatstext.js" "/opt/share/$SCRIPT_NAME.d/" 2>/dev/null
 			mv "/jffs/addons/$SCRIPT_NAME.d/modstats.db" "/opt/share/$SCRIPT_NAME.d/" 2>/dev/null
+			mv "/jffs/addons/$SCRIPT_NAME.d/.indexcreated" "/opt/share/$SCRIPT_NAME.d/" 2>/dev/null
 			SCRIPT_CONF="/opt/share/$SCRIPT_NAME.d/config"
 			ScriptStorageLocation load
 		;;
@@ -571,6 +572,7 @@ ScriptStorageLocation(){
 			mv "/opt/share/$SCRIPT_NAME.d/config.bak" "/jffs/addons/$SCRIPT_NAME.d/" 2>/dev/null
 			mv "/opt/share/$SCRIPT_NAME.d/modstatstext.js" "/jffs/addons/$SCRIPT_NAME.d/" 2>/dev/null
 			mv "/opt/share/$SCRIPT_NAME.d/modstats.db" "/jffs/addons/$SCRIPT_NAME.d/" 2>/dev/null
+			mv "/opt/share/$SCRIPT_NAME.d/.indexcreated" "/jffs/addons/$SCRIPT_NAME.d/" 2>/dev/null
 			SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
 			ScriptStorageLocation load
 		;;
