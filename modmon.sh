@@ -638,21 +638,6 @@ FixTxPwr(){
 	esac
 }
 
-WritePlainData_ToJS(){
-	inputfile="$1"
-	outputfile="$2"
-	shift;shift
-	i=0
-	for var in "$@"; do
-		i=$((i+1))
-		{
-			echo "var $var;"
-			echo "$var = [];"
-			echo "${var}.unshift('$(awk -v i=$i '{printf t $i} {t=","}' "$inputfile" | sed "s~,~\\',\\'~g")');"
-			echo
-		} >> "$outputfile"
-	done
-	sed -i 's/@/ /g' "$outputfile"
 DaysToKeep(){
 	case "$1" in
 		update)
@@ -1386,7 +1371,8 @@ case "$1" in
 	;;
 	service_event)
 		if [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME" ]; then
-			Check_Lock
+			rm -f /tmp/detect_modmon.js
+			Check_Lock webui
 			Get_Modem_Stats
 			Clear_Lock
 			exit 0
@@ -1410,19 +1396,6 @@ case "$1" in
 		Update_Version force
 		exit 0
 	;;
-	setversion)
-		Create_Dirs
-		Conf_Exists
-		ScriptStorageLocation load
-		Create_Symlinks
-		Auto_Startup create 2>/dev/null
-		Auto_Cron create 2>/dev/null
-		Auto_ServiceEvent create 2>/dev/null
-		Shortcut_Script create
-		Set_Version_Custom_Settings local "$SCRIPT_VERSION"
-		Set_Version_Custom_Settings server "$SCRIPT_VERSION"
-		exit 0
-	;;
 	postupdate)
 		Create_Dirs
 		Conf_Exists
@@ -1439,7 +1412,6 @@ case "$1" in
 		exit 0
 	;;
 	uninstall)
-		Check_Lock
 		Menu_Uninstall
 		exit 0
 	;;
