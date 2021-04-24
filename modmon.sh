@@ -708,6 +708,7 @@ WriteSql_ToFile(){
 		dividefactor=10
 	fi
 	
+	echo "SELECT ('Ch. ' || [ChannelNum]) Channel,Min([Timestamp]) Time,IFNULL(Avg([$1])/$dividefactor,'NaN') Value FROM $2 WHERE ([Timestamp] >= $timenow - ($multiplier*$maxcount)) GROUP BY Channel,([Timestamp]/($multiplier)) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;" >> "$7"
 }
 
 Get_Modem_Stats(){
@@ -743,8 +744,7 @@ Get_Modem_Stats(){
 	
 	if [ "$(wc -l < "$shstatsfile" )" -gt 1 ]; then
 		for metric in $metriclist; do
-		{
-			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL, [Timestamp] NUMERIC NOT NULL, [ChannelNum] INTEGER NOT NULL, [Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
+			echo "CREATE TABLE IF NOT EXISTS [modstats_$metric] ([StatID] INTEGER PRIMARY KEY NOT NULL,[Timestamp] NUMERIC NOT NULL,[ChannelNum] INTEGER NOT NULL,[Measurement] REAL NOT NULL);" > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
 			
@@ -758,10 +758,9 @@ Get_Modem_Stats(){
 			done
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			
-			echo "DELETE FROM [modstats_$metric] WHERE [Timestamp] < ($timenow - (86400*30));" > /tmp/modmon-stats.sql
+			echo "DELETE FROM [modstats_$metric] WHERE [Timestamp] < strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'));" > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			rm -f /tmp/modmon-stats.sql
-		}
 		done
 		
 		Generate_CSVs
@@ -820,8 +819,8 @@ Generate_CSVs(){
 		{
 			echo ".mode csv"
 			echo ".headers on"
-			echo ".output $CSV_OUTPUT_DIR/${metric}daily.htm"
-			echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= $timenow - 86400) ORDER BY [ChannelNum] ASC;"
+			echo ".output $CSV_OUTPUT_DIR/${metric}_daily.htm"
+			echo "SELECT ('Ch. ' || [ChannelNum]) Channel,[Timestamp] Time,([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-1 day'))) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;"
 		} > /tmp/modmon-stats.sql
 		"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 		
@@ -829,16 +828,16 @@ Generate_CSVs(){
 			{
 				echo ".mode csv"
 				echo ".headers on"
-				echo ".output $CSV_OUTPUT_DIR/${metric}weekly.htm"
-				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*7) ORDER BY [ChannelNum] ASC;"
+				echo ".output $CSV_OUTPUT_DIR/${metric}_weekly.htm"
+				echo "SELECT ('Ch. ' || [ChannelNum]) Channel,[Timestamp] Time,([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-7 day'))) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;"
 			} > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			
 			{
 				echo ".mode csv"
 				echo ".headers on"
-				echo ".output $CSV_OUTPUT_DIR/${metric}monthly.htm"
-				echo "SELECT ('Ch. ' || [ChannelNum]) Channel, [Timestamp] Time, ([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [ChannelNum] ASC;"
+				echo ".output $CSV_OUTPUT_DIR/${metric}_monthly.htm"
+				echo "SELECT ('Ch. ' || [ChannelNum]) Channel,[Timestamp] Time,([Measurement]/$dividefactor) Value FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-30 day'))) ORDER BY [ChannelNum] ASC,[Timestamp] DESC;"
 			} > /tmp/modmon-stats.sql
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 		elif [ "$OUTPUTDATAMODE" = "average" ]; then
@@ -848,6 +847,9 @@ Generate_CSVs(){
 			WriteSql_ToFile Measurement "modstats_$metric" 12 30 "$CSV_OUTPUT_DIR/$metric" monthly /tmp/modmon-stats.sql "$timenow"
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 		fi
+		rm -f "$CSV_OUTPUT_DIR/${metric}daily.htm"
+		rm -f "$CSV_OUTPUT_DIR/${metric}weekly.htm"
+		rm -f "$CSV_OUTPUT_DIR/${metric}monthly.htm"
 	}
 	done
 	
@@ -857,7 +859,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_RxTimes.htm"
-		echo "SELECT [Timestamp] FROM modstats_RxPwr WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Timestamp] FROM modstats_RxPwr ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -865,7 +867,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_TxTimes.htm"
-		echo "SELECT [Timestamp] FROM modstats_TxPwr WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Timestamp] FROM modstats_TxPwr ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -873,7 +875,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_RxChannels.htm"
-		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_RxPwr WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [Timestamp] DESC;"
+		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_RxPwr ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -881,7 +883,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_TxChannels.htm"
-		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_TxPwr WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [Timestamp] DESC;"
+		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_TxPwr ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -891,7 +893,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_$metric.htm"
-		echo "SELECT [Measurement] $metric FROM modstats_$metric WHERE [Timestamp] >= ($timenow - 86400*30) ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Measurement] $metric FROM modstats_$metric ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	done
