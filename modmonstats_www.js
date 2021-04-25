@@ -59,7 +59,7 @@ function Draw_Chart_NoData(txtchartname){
 	ctx.textBaseline = 'middle';
 	ctx.font = 'normal normal bolder 48px Arial';
 	ctx.fillStyle = 'white';
-	ctx.fillText('No data to display',365,250);
+	ctx.fillText('Data loading...',365,250);
 	ctx.restore();
 }
 
@@ -458,6 +458,7 @@ function changeChart(e) {
 
 function RedrawAllCharts(){
 	for(var i = 0; i < metriclist.length; i++){
+		Draw_Chart_NoData(metriclist[i]);
 		for(var i2 = 0; i2 < chartlist.length; i2++){
 			d3.csv('/ext/modmon/csv/'+metriclist[i]+"_"+chartlist[i2]+'.htm').then(ProcessChart.bind(null,i,i2));
 		}
@@ -568,6 +569,8 @@ function initial(){
 	SetCurrentPage();
 	LoadCustomSettings();
 	show_menu();
+	$j('#sortTableContainer').empty();
+	$j('#sortTableContainer').append(BuildModemLogsTableNoData());
 	get_conf_file();
 	$j('#Time_Format').val(GetCookie('Time_Format','number'));
 	ScriptUpdateLayout();
@@ -970,6 +973,17 @@ function SortTable(sorttext){
 			}
 		}
 	});
+}
+
+function BuildModemLogsTableNoData(){
+	var tablehtml='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="sortTable">';
+	tablehtml+='<tr>';
+	tablehtml+='<td colspan="3" class="nodata">';
+	tablehtml+='Data loading...';
+	tablehtml+='</td>';
+	tablehtml+='</tr>';
+	tablehtml += '</table>';
+	return tablehtml;
 }
 
 function BuildModemLogsTable(){
