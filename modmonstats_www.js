@@ -67,7 +67,7 @@ function Draw_Chart(txtchartname,txttitle,txtunity){
 	var chartperiod = getChartPeriod($j('#'+txtchartname+'_Period option:selected').val());
 	var txtunitx = timeunitlist[$j('#'+txtchartname+'_Period option:selected').val()];
 	var numunitx = intervallist[$j('#'+txtchartname+'_Period option:selected').val()];
-	var dataobject = window[txtchartname+chartperiod];
+	var dataobject = window[txtchartname+'_'+chartperiod];
 	
 	if(typeof dataobject === 'undefined' || dataobject === null){ Draw_Chart_NoData(txtchartname); return; }
 	if(dataobject.length == 0){ Draw_Chart_NoData(txtchartname); return; }
@@ -508,7 +508,7 @@ function getTimeFormat(value,format){
 }
 
 function ProcessChart(i1,i2,dataobject){
-	window[metriclist[i1]+chartlist[i2]] = dataobject;
+	window[metriclist[i1]+'_'+chartlist[i2]] = dataobject;
 	currentNoCharts++;
 	
 	if(currentNoCharts == maxNoCharts){
