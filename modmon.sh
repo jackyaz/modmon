@@ -962,11 +962,11 @@ Process_Upgrade(){
 		for metric in $metriclist; do
 			echo "CREATE INDEX IF NOT EXISTS idx_${metric}_time_measurement ON [modstats_$metric] (Timestamp,Measurement);" > /tmp/modmon-upgrade.sql
 			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-upgrade.sql >/dev/null 2>&1; do
-				:
+				sleep 1
 			done
 			echo "CREATE INDEX IF NOT EXISTS idx_${metric}_channel_measurement ON [modstats_$metric] (ChannelNum,Measurement);" > /tmp/modmon-upgrade.sql
 			while ! "$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-upgrade.sql >/dev/null 2>&1; do
-				:
+				sleep 1
 			done
 		done
 		rm -f /tmp/modmon-upgrade.sql
