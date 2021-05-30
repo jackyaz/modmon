@@ -22,7 +22,7 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v1.1.5"
+readonly SCRIPT_VERSION="v1.1.6"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -953,6 +953,29 @@ Generate_Modem_Logs(){
 	mv /tmp/modlogs.csv "$SCRIPT_STORAGE_DIR/modlogs.htm"
 }
 
+Reset_DB(){
+	SIZEAVAIL="$(df -P -k "$SCRIPT_STORAGE_DIR" | awk '{print $4}' | tail -n 1)"
+	SIZEDB="$(ls -l "$SCRIPT_STORAGE_DIR/modstats.db" | awk '{print $5}')"
+	if [ "$SIZEDB" -gt "$SIZEAVAIL" ]; then
+		Print_Output true "Database size exceeds available space. $(ls -lh "$SCRIPT_STORAGE_DIR/modstats.db" | awk '{print $5}')B is required to create backup." "$ERR"
+		return 1
+	else
+		Print_Output true "Sufficient free space to back up database, proceeding..." "$PASS"
+		if ! cp -a "$SCRIPT_STORAGE_DIR/modstats.db" "$SCRIPT_STORAGE_DIR/modstats.db.bak"; then
+			Print_Output true "Database backup failed, please check storage device" "$WARN"
+		fi
+		
+		metriclist="RxPwr RxSnr RxPstRs TxPwr TxT3Out TxT4Out"
+		for metric in $metriclist; do
+			echo "DELETE FROM [modstats_$metric];" > /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+		done
+		rm -f /tmp/modmon-stats.sql
+			
+		Print_Output true "Database reset complete" "$WARN"
+	fi
+}
+
 Process_Upgrade(){
 	if [ ! -f "$SCRIPT_STORAGE_DIR/.indexcreated" ]; then
 		renice 15 $$
@@ -1044,6 +1067,7 @@ MainMenu(){
 	printf "f.    Fix Upstream Power level reporting (reduce by 10x, needed in newer Hub 3 firmware)\\n      Currently: ${SETTING}%s${CLEARFORMAT} \\n\\n" "$FIXTXPWR_MENU"
 	printf "u.    Check for updates\\n"
 	printf "uf.   Update %s with latest version (force update)\\n\\n" "$SCRIPT_NAME"
+	printf "r.    Reset %s database / delete all data\\n\\n" "$SCRIPT_NAME"
 	printf "e.    Exit %s\\n\\n" "$SCRIPT_NAME"
 	printf "z.    Uninstall %s\\n" "$SCRIPT_NAME"
 	printf "\\n"
@@ -1120,6 +1144,15 @@ MainMenu(){
 				printf "\\n"
 				if Check_Lock menu; then
 					Update_Version force
+					Clear_Lock
+				fi
+				PressEnter
+				break
+			;;
+			r)
+				printf "\\n"
+				if Check_Lock menu; then
+					Menu_ResetDB
 					Clear_Lock
 				fi
 				PressEnter
@@ -1268,6 +1301,22 @@ Menu_Startup(){
 	Shortcut_Script create
 	Mount_WebUI
 	Clear_Lock
+}
+
+Menu_ResetDB(){
+	printf "${BOLD}\\e[33mWARNING: This will reset the %s database by deleting all database records.\\n" "$SCRIPT_NAME"
+	printf "A backup of the database will be created if you change your mind.${CLEARFORMAT}\\n"
+	printf "\\n${BOLD}Do you want to continue? (y/n)${CLEARFORMAT}  "
+	read -r confirm
+	case "$confirm" in
+		y|Y)
+			printf "\\n"
+			Reset_DB
+		;;
+		*)
+			printf "\\n${BOLD}\\e[33mDatabase reset cancelled${CLEARFORMAT}\\n\\n"
+		;;
+	esac
 }
 
 Menu_Uninstall(){
