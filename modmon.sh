@@ -14,10 +14,12 @@
 
 ##############        Shellcheck directives      ###########
 # shellcheck disable=SC2009
+# shellcheck disable=SC2012
 # shellcheck disable=SC2016
 # shellcheck disable=SC2018
 # shellcheck disable=SC2019
 # shellcheck disable=SC2059
+# shellcheck disable=SC2155
 ############################################################
 
 ### Start of script variables ###
