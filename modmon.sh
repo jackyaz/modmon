@@ -329,7 +329,7 @@ Create_Symlinks(){
 	rm -rf "${SCRIPT_WEB_DIR:?}/"* 2>/dev/null
 	
 	ln -s /tmp/detect_modmon.js "$SCRIPT_WEB_DIR/detect_modmon.js" 2>/dev/null
-	ln -s "$SCRIPT_STORAGE_DIR/modlogs.htm"  "$SCRIPT_WEB_DIR/modlogs.htm" 2>/dev/null
+	ln -s "$SCRIPT_STORAGE_DIR/modlogs.csv"  "$SCRIPT_WEB_DIR/modlogs.htm" 2>/dev/null
 	ln -s "$SCRIPT_STORAGE_DIR/modstatstext.js" "$SCRIPT_WEB_DIR/modstatstext.js" 2>/dev/null
 	
 	ln -s "$SCRIPT_CONF" "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
@@ -946,6 +946,7 @@ Generate_CSVs(){
 
 Generate_Modem_Logs(){
 	rm -f "$SCRIPT_STORAGE_DIR/modlogs.js"
+	rm -f "$SCRIPT_STORAGE_DIR/modlogs.htm"
 	rm -f /tmp/modlogs.csv
 	logcount="$(grep -c "DevEv" $shstatsfile)"
 	counter=1
@@ -957,7 +958,7 @@ Generate_Modem_Logs(){
 		counter=$((counter + 3))
 	done
 	
-	mv /tmp/modlogs.csv "$SCRIPT_STORAGE_DIR/modlogs.htm"
+	mv /tmp/modlogs.csv "$SCRIPT_STORAGE_DIR/modlogs.csv"
 }
 
 Reset_DB(){
@@ -1004,8 +1005,8 @@ Process_Upgrade(){
 		Print_Output true "Database ready, continuing..." "$PASS"
 		renice 0 $$
 	fi
-	if [ ! -f "$SCRIPT_STORAGE_DIR/modlogs.htm" ]; then
-		touch "$SCRIPT_STORAGE_DIR/modlogs.htm"
+	if [ ! -f "$SCRIPT_STORAGE_DIR/modlogs.csv" ]; then
+		touch "$SCRIPT_STORAGE_DIR/modlogs.csv"
 		Get_Modem_Stats
 	fi
 }
@@ -1268,7 +1269,7 @@ Menu_Install(){
 	done
 	rm -f /tmp/modmon-stats.sql
 	
-	touch "$SCRIPT_STORAGE_DIR/modlogs.htm"
+	touch "$SCRIPT_STORAGE_DIR/modlogs.csv"
 	Process_Upgrade
 	Get_Modem_Stats
 	
