@@ -2,8 +2,8 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/91af8db9cd354643a8ef6a7117be90fb)](https://www.codacy.com/app/jackyaz/modmon?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=jackyaz/modmon&amp;utm_campaign=Badge_Grade)
 ![Shellcheck](https://github.com/jackyaz/modmon/actions/workflows/shellcheck.yml/badge.svg)
 
-## v1.1.6
-### Updated on 2021-05-30
+## v1.1.7
+### Updated on 2021-06-20
 ## About
 modmon is a tool that tracks your cable modem's stats (such as signal power levels) for AsusWRT Merlin with charts for daily, weekly and monthly summaries.
 

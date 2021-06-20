@@ -24,7 +24,7 @@
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="modmon"
-readonly SCRIPT_VERSION="v1.1.6"
+readonly SCRIPT_VERSION="v1.1.7"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -769,8 +769,13 @@ Get_Modem_Stats(){
 			done
 			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
 			
-			echo "DELETE FROM [modstats_$metric] WHERE [Timestamp] < strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'));" > /tmp/modmon-stats.sql
-			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+			{
+				echo "DELETE FROM [modstats_$metric] WHERE [Timestamp] < strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'));"
+				echo "PRAGMA analysis_limit=0;"
+				echo "PRAGMA cache_size=-20000;"
+				echo "ANALYZE modstats_$metric;"
+			} > /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql >/dev/null 2>&1
 			rm -f /tmp/modmon-stats.sql
 		done
 		
@@ -860,7 +865,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_RxTimes.htm"
-		echo "SELECT [Timestamp] FROM modstats_RxPwr ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Timestamp] FROM modstats_RxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -868,7 +873,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_TxTimes.htm"
-		echo "SELECT [Timestamp] FROM modstats_TxPwr ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Timestamp] FROM modstats_TxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -876,7 +881,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_RxChannels.htm"
-		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_RxPwr ORDER BY [Timestamp] DESC;"
+		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_RxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -884,7 +889,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_TxChannels.htm"
-		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_TxPwr ORDER BY [Timestamp] DESC;"
+		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_TxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -894,7 +899,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_$metric.htm"
-		echo "SELECT [Measurement] $metric FROM modstats_$metric ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Measurement] $metric FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	done
