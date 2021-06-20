@@ -459,7 +459,7 @@ function RedrawAllCharts(){
 	for(var i = 0; i < metriclist.length; i++){
 		Draw_Chart_NoData(metriclist[i]);
 		for(var i2 = 0; i2 < chartlist.length; i2++){
-			d3.csv('/ext/modmon/csv/'+metriclist[i]+"_"+chartlist[i2]+'.htm').then(ProcessChart.bind(null,i,i2));
+			d3.csv('/ext/modmon/csv/'+metriclist[i]+'_'+chartlist[i2]+'.htm').then(ProcessChart.bind(null,i,i2));
 		}
 	}
 }
@@ -863,7 +863,7 @@ function get_statstitle_file(){
 		dataType: 'script',
 		timeout: 3000,
 		error: function(xhr){
-			setTimeout(get_statstitle_file, 1000);
+			setTimeout(get_statstitle_file,1000);
 		},
 		success: function(){
 			SetModStatsTitle();
@@ -877,7 +877,7 @@ function get_modemlogs_file(){
 		dataType: 'text',
 		timeout: 3000,
 		error: function(xhr){
-			setTimeout(get_modemlogs_file, 1000);
+			setTimeout(get_modemlogs_file,1000);
 		},
 		success: function(data){
 			ParseModemLogs(data);
@@ -899,7 +899,7 @@ function ParseModemLogs(data){
 			arraysortlistlines.push(parsedsortline);
 		}
 		catch{
-			//do nothing, continue
+			//do nothing,continue
 		}
 	}
 	SortTable(sortname+' '+sortdir.replace('desc','↑').replace('asc','↓').trim());
@@ -931,29 +931,29 @@ function SortTable(sorttext){
 	}
 	else if(sorttype == 'number'){
 		if(sorttext.indexOf('↓') == -1 && sorttext.indexOf('↑') == -1){
-			eval('arraysortlistlines = arraysortlistlines.sort((a, b) => parseFloat(a.'+sortfield+'.replace("m","000")) - parseFloat(b.'+sortfield+'.replace("m","000")));');
+			eval('arraysortlistlines = arraysortlistlines.sort((a,b) => parseFloat(a.'+sortfield+'.replace("m","000")) - parseFloat(b.'+sortfield+'.replace("m","000")));');
 			sortdir = 'asc';
 		}
 		else if(sorttext.indexOf('↓') != -1){
-			eval('arraysortlistlines = arraysortlistlines.sort((a, b) => parseFloat(a.'+sortfield+'.replace("m","000")) - parseFloat(b.'+sortfield+'.replace("m","000"))); ');
+			eval('arraysortlistlines = arraysortlistlines.sort((a,b) => parseFloat(a.'+sortfield+'.replace("m","000")) - parseFloat(b.'+sortfield+'.replace("m","000"))); ');
 			sortdir = 'asc';
 		}
 		else{
-			eval('arraysortlistlines = arraysortlistlines.sort((a, b) => parseFloat(b.'+sortfield+'.replace("m","000")) - parseFloat(a.'+sortfield+'.replace("m","000")));');
+			eval('arraysortlistlines = arraysortlistlines.sort((a,b) => parseFloat(b.'+sortfield+'.replace("m","000")) - parseFloat(a.'+sortfield+'.replace("m","000")));');
 			sortdir = 'desc';
 		}
 	}
 	else if(sorttype == 'date'){
 		if(sorttext.indexOf('↓') == -1 && sorttext.indexOf('↑') == -1){
-			eval('arraysortlistlines = arraysortlistlines.sort((a, b) => new Date(a.'+sortfield+') - new Date(b.'+sortfield+'));');
+			eval('arraysortlistlines = arraysortlistlines.sort((a,b) => new Date(a.'+sortfield+') - new Date(b.'+sortfield+'));');
 			sortdir = 'asc';
 		}
 		else if(sorttext.indexOf('↓') != -1){
-			eval('arraysortlistlines = arraysortlistlines.sort((a, b) => new Date(a.'+sortfield+') - new Date(b.'+sortfield+'));');
+			eval('arraysortlistlines = arraysortlistlines.sort((a,b) => new Date(a.'+sortfield+') - new Date(b.'+sortfield+'));');
 			sortdir = 'asc';
 		}
 		else{
-			eval('arraysortlistlines = arraysortlistlines.sort((a, b) => new Date(b.'+sortfield+') - new Date(a.'+sortfield+'));');
+			eval('arraysortlistlines = arraysortlistlines.sort((a,b) => new Date(b.'+sortfield+') - new Date(a.'+sortfield+'));');
 			sortdir = 'desc';
 		}
 	}
