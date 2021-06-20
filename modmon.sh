@@ -865,7 +865,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_RxTimes.htm"
-		echo "SELECT [Timestamp] FROM modstats_RxPwr ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Timestamp] FROM modstats_RxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -873,7 +873,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_TxTimes.htm"
-		echo "SELECT [Timestamp] FROM modstats_TxPwr ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Timestamp] FROM modstats_TxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -881,7 +881,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_RxChannels.htm"
-		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_RxPwr ORDER BY [Timestamp] DESC;"
+		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_RxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -889,7 +889,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_TxChannels.htm"
-		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_TxPwr ORDER BY [Timestamp] DESC;"
+		echo "SELECT ('Ch. ' || [ChannelNum]) Channel FROM modstats_TxPwr WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	
@@ -899,7 +899,7 @@ Generate_CSVs(){
 		echo ".mode csv"
 		echo ".headers on"
 		echo ".output /tmp/CompleteResults_$metric.htm"
-		echo "SELECT [Measurement] $metric FROM modstats_$metric ORDER BY [Timestamp] DESC;"
+		echo "SELECT [Measurement] $metric FROM modstats_$metric WHERE ([Timestamp] >= strftime('%s',datetime($timenow,'unixepoch','-$(DaysToKeep check) day'))) ORDER BY [Timestamp] DESC;"
 	} > /tmp/modmon-complete.sql
 	"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-complete.sql
 	done
