@@ -775,7 +775,7 @@ Get_Modem_Stats(){
 				echo "PRAGMA cache_size=-20000;"
 				echo "ANALYZE modstats_$metric;"
 			} > /tmp/modmon-stats.sql
-			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql
+			"$SQLITE3_PATH" "$SCRIPT_STORAGE_DIR/modstats.db" < /tmp/modmon-stats.sql >/dev/null 2>&1
 			rm -f /tmp/modmon-stats.sql
 		done
 		
