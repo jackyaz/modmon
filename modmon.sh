@@ -964,7 +964,7 @@ Generate_Modem_Logs(){
 Reset_DB(){
 	SIZEAVAIL="$(df -P -k "$SCRIPT_STORAGE_DIR" | awk '{print $4}' | tail -n 1)"
 	SIZEDB="$(ls -l "$SCRIPT_STORAGE_DIR/modstats.db" | awk '{print $5}')"
-	if [ "$SIZEDB" -gt "$SIZEAVAIL" ]; then
+	if [ "$SIZEDB" -gt "$((SIZEAVAIL*1024))" ]; then
 		Print_Output true "Database size exceeds available space. $(ls -lh "$SCRIPT_STORAGE_DIR/modstats.db" | awk '{print $5}')B is required to create backup." "$ERR"
 		return 1
 	else
