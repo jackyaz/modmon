@@ -668,7 +668,6 @@ function update_status(){
 	$j.ajax({
 		url: '/ext/modmon/detect_update.js',
 		dataType: 'script',
-		timeout: 3000,
 		error: function(xhr){
 			setTimeout(update_status,1000);
 		},
@@ -766,7 +765,6 @@ function update_modtest(){
 	$j.ajax({
 		url: '/ext/modmon/detect_modmon.js',
 		dataType: 'script',
-		timeout: 1000,
 		error: function(xhr){
 			setTimeout(update_modtest,1000);
 		},
@@ -861,7 +859,6 @@ function get_statstitle_file(){
 	$j.ajax({
 		url: '/ext/modmon/modstatstext.js',
 		dataType: 'script',
-		timeout: 3000,
 		error: function(xhr){
 			setTimeout(get_statstitle_file,1000);
 		},
@@ -875,7 +872,6 @@ function get_modemlogs_file(){
 	$j.ajax({
 		url: '/ext/modmon/modlogs.htm',
 		dataType: 'text',
-		timeout: 3000,
 		error: function(xhr){
 			setTimeout(get_modemlogs_file,1000);
 		},
