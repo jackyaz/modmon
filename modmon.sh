@@ -1509,6 +1509,7 @@ case "$1" in
 		if [ "$2" = "start" ] && [ "$3" = "$SCRIPT_NAME" ]; then
 			rm -f /tmp/detect_modmon.js
 			Check_Lock webui
+			sleep 3
 			Get_Modem_Stats
 			Clear_Lock
 			exit 0
