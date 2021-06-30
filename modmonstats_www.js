@@ -817,7 +817,7 @@ function UpdateStats(){
 	document.getElementById('modupdate_text').innerHTML = 'Retrieving Hub 3 stats';
 	showhide('imgModUpdate',true);
 	showhide('modupdate_text',true);
-	setTimeout(update_modtest,2000);
+	setTimeout(update_modtest,5000);
 }
 
 function GetVersionNumber(versiontype){
