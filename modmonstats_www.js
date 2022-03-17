@@ -444,7 +444,7 @@ function changeChart(e) {
 		Draw_Chart('RxPstRs',titlelist[2],measureunitlist[2]);
 	}
 	else if(name == 'TxPwr'){
-		Draw_Chart('TxPwr',titlelist[2],measureunitlist[3]);
+		Draw_Chart('TxPwr',titlelist[3],measureunitlist[3]);
 	}
 	else if(name == 'TxT3Out'){
 		Draw_Chart('TxT3Out',titlelist[4],measureunitlist[4]);
